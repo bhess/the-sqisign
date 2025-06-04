@@ -457,6 +457,8 @@
 #define fp_set_one                                      SQISIGN_NAMESPACE(fp_set_one)
 #define fp_set_small                                    SQISIGN_NAMESPACE(fp_set_small)
 #define fp_set_zero                                     SQISIGN_NAMESPACE(fp_set_zero)
+#define ONE                                             SQISIGN_NAMESPACE(ONE)
+#define ZERO                                            SQISIGN_NAMESPACE(ZERO)
 
 // Namespacing symbols exported from fp_p27500_64.c, fp_p5248_64.c, fp_p65376_64.c, gf27500.c, gf5248.c, gf65376.c:
 #undef fp_add

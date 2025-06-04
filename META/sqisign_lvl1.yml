@@ -48,7 +48,7 @@ implementations:
   - name: broadwell
     version: round2
     folder_name: .
-    compile_opts: -DGMP_LIBRARY=MINI -DCMAKE_BUILD_TYPE=Release -DSQISIGN_BUILD_TYPE=broadwell
+    compile_opts: -DMINI_GMP=ON -DSQISIGN_BUILD_TYPE_BROADWELL=ON -DENABLE_SIGN=ON -DSQISIGN_VARIANT=lvl1 -DRANDOMBYTES_SYSTEM=ON
     signature_keypair: sqisign_lvl1_broadwell_sqisign_keypair
     signature_signature: sqisign_lvl1_broadwell_sqisign_sign_signature
     signature_verify: sqisign_lvl1_broadwell_sqisign_verify_signature
