@@ -1023,6 +1023,45 @@
 #define xisog_2_singular                                SQISIGN_NAMESPACE(xisog_2_singular)
 #define xisog_4                                         SQISIGN_NAMESPACE(xisog_4)
 
+// Namespacing symbols from precomp:
+#undef BASIS_E0_PX
+#undef BASIS_E0_QX
+#undef p_cofactor_for_2f
+#undef CURVES_WITH_ENDOMORPHISMS
+#undef EVEN_INDEX
+#undef CHI_EVAL
+#undef FP2_CONSTANTS
+#undef SPLITTING_TRANSFORMS
+#undef NORMALIZATION_TRANSFORMS
+#undef QUAT_prime_cofactor
+#undef QUATALG_PINFTY
+#undef EXTREMAL_ORDERS
+#undef CONNECTING_IDEALS
+#undef CONJUGATING_ELEMENTS
+#undef TWO_TO_SECURITY_BITS
+#undef TORSION_PLUS_2POWER
+#undef SEC_DEGREE
+#undef COM_DEGREE
+
+#define BASIS_E0_PX                                     SQISIGN_NAMESPACE(BASIS_E0_PX)
+#define BASIS_E0_QX                                     SQISIGN_NAMESPACE(BASIS_E0_QX)
+#define p_cofactor_for_2f                               SQISIGN_NAMESPACE(p_cofactor_for_2f)
+#define CURVES_WITH_ENDOMORPHISMS                       SQISIGN_NAMESPACE(CURVES_WITH_ENDOMORPHISMS)
+#define EVEN_INDEX                                      SQISIGN_NAMESPACE(EVEN_INDEX)
+#define CHI_EVAL                                        SQISIGN_NAMESPACE(CHI_EVAL)
+#define FP2_CONSTANTS                                   SQISIGN_NAMESPACE(FP2_CONSTANTS)
+#define SPLITTING_TRANSFORMS                            SQISIGN_NAMESPACE(SPLITTING_TRANSFORMS)
+#define NORMALIZATION_TRANSFORMS                        SQISIGN_NAMESPACE(NORMALIZATION_TRANSFORMS)
+#define QUAT_prime_cofactor                             SQISIGN_NAMESPACE(QUAT_prime_cofactor)
+#define QUATALG_PINFTY                                  SQISIGN_NAMESPACE(QUATALG_PINFTY)
+#define EXTREMAL_ORDERS                                 SQISIGN_NAMESPACE(EXTREMAL_ORDERS)
+#define CONNECTING_IDEALS                               SQISIGN_NAMESPACE(CONNECTING_IDEALS)
+#define CONJUGATING_ELEMENTS                            SQISIGN_NAMESPACE(CONJUGATING_ELEMENTS)
+#define TWO_TO_SECURITY_BITS                            SQISIGN_NAMESPACE(TWO_TO_SECURITY_BITS)
+#define TORSION_PLUS_2POWER                             SQISIGN_NAMESPACE(TORSION_PLUS_2POWER)
+#define SEC_DEGREE                                      SQISIGN_NAMESPACE(SEC_DEGREE)
+#define COM_DEGREE                                      SQISIGN_NAMESPACE(COM_DEGREE)
+
 
 #endif
 
