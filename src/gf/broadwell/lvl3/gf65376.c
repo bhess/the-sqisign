@@ -1,10 +1,10 @@
 #include "gf65376.h"
 
 // see gf65376.h
-const gf65376 gf65376_ZERO = { 0, 0, 0, 0, 0, 0 };
+const gf65376 ZERO = { 0, 0, 0, 0, 0, 0 };
 
 // see gf65376.h
-const gf65376 gf65376_ONE = { 0x0000000000000003, 0x0000000000000000, 0x0000000000000000,
+const gf65376 ONE = { 0x0000000000000003, 0x0000000000000000, 0x0000000000000000,
                               0x0000000000000000, 0x0000000000000000, 0x3D00000000000000 };
 
 // see gf65376.h
@@ -267,7 +267,7 @@ gf65376_div(gf65376 *d, const gf65376 *x, const gf65376 *y)
     inner_gf65376_normalize(&a, y);
     b = MODULUS;
     u = *x;
-    v = gf65376_ZERO;
+    v = ZERO;
 
     // Generic loop does 23*31 = 713 inner iterations.
     for (int i = 0; i < 23; i++) {
@@ -432,7 +432,7 @@ gf65376_div(gf65376 *d, const gf65376 *x, const gf65376 *y)
 uint32_t
 gf65376_invert(gf65376 *d, const gf65376 *a)
 {
-    return gf65376_div(d, &gf65376_ONE, a);
+    return gf65376_div(d, &ONE, a);
 }
 
 // see gf65376.h
@@ -704,7 +704,7 @@ gf65376_decode_reduce(gf65376 *d, const void *src, size_t len)
 {
     const uint8_t *buf = src;
 
-    *d = gf65376_ZERO;
+    *d = ZERO;
     if (len == 0) {
         return;
     }

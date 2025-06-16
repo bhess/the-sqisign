@@ -1,10 +1,10 @@
 #include "gf27500.h"
 
 // see gf27500.h
-const gf27500 gf27500_ZERO = { 0, 0, 0, 0, 0, 0, 0, 0 };
+const gf27500 ZERO = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // see gf27500.h
-const gf27500 gf27500_ONE = { 0x0000000000000097, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+const gf27500 ONE = { 0x0000000000000097, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
                               0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0130000000000000 };
 
 // see gf27500.h
@@ -283,7 +283,7 @@ gf27500_div(gf27500 *d, const gf27500 *x, const gf27500 *y)
     inner_gf27500_normalize(&a, y);
     b = MODULUS;
     u = *x;
-    v = gf27500_ZERO;
+    v = ZERO;
 
     // Generic loop does 31*31 = 961 inner iterations.
     for (int i = 0; i < 31; i++) {
@@ -456,7 +456,7 @@ gf27500_div(gf27500 *d, const gf27500 *x, const gf27500 *y)
 uint32_t
 gf27500_invert(gf27500 *d, const gf27500 *a)
 {
-    return gf27500_div(d, &gf27500_ONE, a);
+    return gf27500_div(d, &ONE, a);
 }
 
 // see gf27500.h
@@ -746,7 +746,7 @@ gf27500_decode_reduce(gf27500 *d, const void *src, size_t len)
 {
     const uint8_t *buf = src;
 
-    *d = gf27500_ZERO;
+    *d = ZERO;
     if (len == 0) {
         return;
     }

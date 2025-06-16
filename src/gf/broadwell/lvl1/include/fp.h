@@ -16,10 +16,6 @@
 // Type for elements of GF(p)
 #define fp_t gf5248
 
-// Constants (Assumed to be in Montgomery form)
-#define ZERO gf5248_ZERO
-#define ONE gf5248_ONE
-
 // Operations in fp
 static inline void
 fp_neg(fp_t *d, const fp_t *a)

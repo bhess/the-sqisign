@@ -5,10 +5,10 @@
 #include "gf5248.h"
 
 // see gf5248.h
-const gf5248 gf5248_ZERO = { 0, 0, 0, 0 };
+const gf5248 ZERO = { 0, 0, 0, 0 };
 
 // see gf5248.h
-const gf5248 gf5248_ONE = { 0x0000000000000033, 0x0000000000000000, 0x0000000000000000, 0x0100000000000000 };
+const gf5248 ONE = { 0x0000000000000033, 0x0000000000000000, 0x0000000000000000, 0x0100000000000000 };
 
 // see gf5248.h
 const gf5248 gf5248_MINUS_ONE = { 0xFFFFFFFFFFFFFFCC, 0xFFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF, 0x03FFFFFFFFFFFFFF };
@@ -269,7 +269,7 @@ gf5248_div(gf5248 *d, const gf5248 *x, const gf5248 *y)
     inner_gf5248_normalize(&a, y);
     b = MODULUS;
     u = *x;
-    v = gf5248_ZERO;
+    v = ZERO;
 
     // Generic loop does 15*31 = 465 inner iterations.
     for (int i = 0; i < 15; i++) {
@@ -430,7 +430,7 @@ gf5248_div(gf5248 *d, const gf5248 *x, const gf5248 *y)
 uint32_t
 gf5248_invert(gf5248 *d, const gf5248 *a)
 {
-    return gf5248_div(d, &gf5248_ONE, a);
+    return gf5248_div(d, &ONE, a);
 }
 
 // see gf5248.h
@@ -689,7 +689,7 @@ gf5248_decode_reduce(gf5248 *d, const void *src, size_t len)
 {
     const uint8_t *buf = src;
 
-    *d = gf5248_ZERO;
+    *d = ZERO;
     if (len == 0) {
         return;
     }

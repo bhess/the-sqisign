@@ -45,12 +45,12 @@ extern "C"
     /*
      * Constant zero (in the field).
      */
-    extern const gf5248 gf5248_ZERO;
+    extern const gf5248 ZERO;
 
     /*
      * Constant one (in the field).
      */
-    extern const gf5248 gf5248_ONE;
+    extern const gf5248 ONE;
 
     /*
      * Constant -1 (in the field).

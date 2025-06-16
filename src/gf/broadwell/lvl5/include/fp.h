@@ -17,11 +17,6 @@
 // Type for elements of GF(p)
 #define fp_t gf27500
 
-// Constants (Assumed to be in Montgomery form)
-// Constants (Assumed to be in Montgomery form)
-#define ZERO gf27500_ZERO
-#define ONE gf27500_ONE
-
 // Operations in fp
 static inline void
 fp_neg(fp_t *d, const fp_t *a)

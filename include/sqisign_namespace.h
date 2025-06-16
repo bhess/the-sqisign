@@ -358,8 +358,12 @@
 
 // Namespacing symbols exported from fp.c:
 #undef fp_select
+#undef p
+#undef p2
 
 #define fp_select                                       SQISIGN_NAMESPACE(fp_select)
+#define p                                               SQISIGN_NAMESPACE(p)
+#define p2                                              SQISIGN_NAMESPACE(p2)
 
 // Namespacing symbols exported from fp.c, fp_p27500_64.c, fp_p5248_64.c, fp_p65376_64.c:
 #undef fp_exp3div4
