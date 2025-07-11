@@ -1,6 +1,7 @@
 // clang-format off
 // Command line : python monty.py 64
 // 0x4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+#ifdef RADIX_64
 
 #include <stdint.h>
 #include <stdio.h>
@@ -789,3 +790,5 @@ fp_decode_reduce(fp_t *d, const void *src, size_t len)
         fp_add(d, d, &a);
     }
 }
+
+#endif // RADIX_64
