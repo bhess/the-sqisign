@@ -110,6 +110,8 @@ fp_sub(fp_num *x, fp_num *y, fp_num *r)
           r->e = y->e;
       }
 
+      normalize(r);
+
       // I think the DPE code calls normalize here. It's not needed but there's a chance it changes the results
     }
 }
