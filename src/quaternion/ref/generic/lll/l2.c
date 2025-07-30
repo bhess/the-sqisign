@@ -40,7 +40,6 @@ to_one(fp_num *x)
 {
     x->s = 1;
     x->e = 0;
-    normalize(x);
 }
 
 static void
@@ -48,11 +47,17 @@ to_deltabar(fp_num *x)
 {
     x->s = DELTABAR;
     x->e = 0;
-    normalize(x);
 }
 
 static void
-from_mpz(mpz_t x, fp_num *r)
+to_etabar(fp_num *x)
+{
+    x->s = ETABAR;
+    x->e = 0;
+}
+
+static void
+from_mpz(const mpz_t x, fp_num *r)
 {
     long exp = 0;
     r->s = mpz_get_d_2exp(&exp, x);
@@ -60,7 +65,7 @@ from_mpz(mpz_t x, fp_num *r)
 }
 
 static void
-to_mpz(fp_num *x, mpz_t r)
+to_mpz(const fp_num *x, mpz_t r)
 {
     if (x->e >= DBL_MANT_DIG) {
         double s = x->s * 0x1P53;
@@ -75,15 +80,16 @@ to_mpz(fp_num *x, mpz_t r)
 }
 
 static void
-fp_mul(fp_num *x, fp_num *y, fp_num *r)
+fp_mul(const fp_num *x, const fp_num *y, fp_num *r)
 {
     r->s = x->s * y->s;
     r->e = x->e + y->e;
     normalize(r);
+
 }
 
 static void
-fp_div(fp_num *x, fp_num *y, fp_num *r)
+fp_div(const fp_num *x, const fp_num *y, fp_num *r)
 {
     r->s = x->s / y->s;
     r->e = x->e - y->e;
@@ -91,7 +97,7 @@ fp_div(fp_num *x, fp_num *y, fp_num *r)
 }
 
 static void
-fp_sub(fp_num *x, fp_num *y, fp_num *r)
+fp_sub(const fp_num *x, const fp_num *y, fp_num *r)
 {
     if (x->e > y->e + DBL_MANT_DIG) {
         r->s = x->s;
@@ -111,41 +117,35 @@ fp_sub(fp_num *x, fp_num *y, fp_num *r)
       }
 
       normalize(r);
-
-      // I think the DPE code calls normalize here. It's not needed but there's a chance it changes the results
     }
 }
 
 static inline int
-sign(fp_num *x)
+sign(const fp_num *x)
 {
-    if (x->s < 0.0) {
+    if (x->s < 0.0)
         return -1;
-    }
     return 1;
 }
 
 static int
-fp_cmp(fp_num *x, fp_num *y)
+fp_cmp(const fp_num *x, const fp_num *y)
 {
     int sign_x = sign(x);
     int sign_y = sign(y);
 
-    if (sign_x != sign_y) {
+    if (sign_x != sign_y)
         return sign_x - sign_y;
-    } else if (x->e > y->e) {
+    else if (x->e > y->e)
         return sign_x;
-    } else if (y->e > x->e) {
+    else if (y->e > x->e)
         return -sign_x;
-    } else {
-        if (x->s > y->s) {
-            return 1;
-        } else if (x->s < y->s) {
-            return -1;
-        } else {
-            return 0;
-        }
-    }
+    else if (x->s > y->s)
+        return 1;
+    else if (x->s < y->s)
+        return -1;
+    else
+        return 0;
 }
 
 static void
@@ -165,16 +165,24 @@ fp_round(fp_num *x)
     }
 }
 
+static void
+fp_abs(const fp_num *x, fp_num *y) {
+    if (x->s < 0.0) {
+        y->s = -x->s;
+    } else {
+        y->s = x->s;
+    }
+    y->e = x->e;
+}
+
 void
 quat_lll_core(ibz_mat_4x4_t *G, ibz_mat_4x4_t *basis)
 {
     fp_num const_one = {0};
-    fp_num const_DELTABAR = {0};
     fp_num delta_bar = {0};
     fp_num eta_bar = {0};
     fp_num neg_eta_bar = {0};
     to_one(&const_one);
-    to_deltabar(&const_DELTABAR);
     to_deltabar(&delta_bar);
     eta_bar.s = ETABAR;
     eta_bar.e = 0;
@@ -295,15 +303,15 @@ quat_lll_core(ibz_mat_4x4_t *G, ibz_mat_4x4_t *basis)
     // Check size-reducedness
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < i; j++) {
-            dpe_abs(u[i][j], u[i][j]);
-            assert(dpe_cmp_d(u[i][j], ETABAR) <= 0);
+            fp_abs(&u[i][j], &u[i][j]);
+            assert(fp_cmp(&u[i][j], &eta_bar) <= 0);
         }
     // Check Lovasz' conditions
     for (int i = 1; i < 4; i++) {
-        dpe_mul(tmpF, u[i][i - 1], u[i][i - 1]);
-        dpe_sub(tmpF, dpe_const_DELTABAR, tmpF);
-        dpe_mul(tmpF, tmpF, r[i - 1][i - 1]);
-        assert(dpe_cmp(tmpF, r[i][i]) <= 0);
+        fp_mul(&u[i][i - 1], &u[i][i - 1], &tmpF);
+        fp_sub(&delta_bar, &tmpF, &tmpF);
+        fp_mul(&tmpF, &r[i - 1][i - 1], &tmpF);
+        assert(fp_cmp(&tmpF, &r[i][i]) <= 0);
     }
 #endif
 
