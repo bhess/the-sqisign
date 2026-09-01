@@ -25,6 +25,8 @@ void fp2_sub(fp2_t *x, const fp2_t *y, const fp2_t *z);
 void fp2_neg(fp2_t *x, const fp2_t *y);
 void fp2_mul(fp2_t *x, const fp2_t *y, const fp2_t *z);
 void fp2_sqr(fp2_t *x, const fp2_t *y);
+void fp2_mul_by_i(fp2_t *a, const fp2_t *b, uint32_t ctl);
+void fp2_frob(fp2_t *out, const fp2_t *in);
 void fp2_inv(fp2_t *x);
 uint32_t fp2_is_square(const fp2_t *x);
 void fp2_sqrt(fp2_t *x);
@@ -37,5 +39,6 @@ void fp2_encode(void *dst, const fp2_t *a);
 uint32_t fp2_decode(fp2_t *d, const void *src);
 void fp2_select(fp2_t *d, const fp2_t *a0, const fp2_t *a1, uint32_t ctl);
 void fp2_cswap(fp2_t *a, fp2_t *b, uint32_t ctl);
+uint32_t fp2_less_than(const fp2_t *x1, const fp2_t *x2);
 
 #endif

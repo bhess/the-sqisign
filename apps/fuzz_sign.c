@@ -17,78 +17,79 @@
  *
  * @return int return code
  */
-static int example_sqisign(int iter) {
-  int ret = 0;
+static int
+example_sqisign(int iter)
+{
+    int ret = 0;
 
-  unsigned long long msglen = 64;
-  unsigned long long smlen = CRYPTO_BYTES + msglen;
+    unsigned long long msglen = 64;
+    unsigned long long smlen = CRYPTO_BYTES + msglen;
 
-  unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
-  unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);
+    unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
+    unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);
 
-  unsigned char *sm = calloc(smlen, 1);
+    unsigned char *sm = calloc(smlen, 1);
 
-  unsigned char msg[msglen];
+    unsigned char msg[msglen];
 
-  FILE *f = NULL;
+    FILE *f = NULL;
 
-  int res = crypto_sign_keypair(pk, sk);
-  if (res) {
-    fprintf(stderr, "crypto_sign_keypair -> FAIL\n");
-    ret = 1;
-    goto end;
-  }
+    int res = crypto_sign_keypair(pk, sk);
+    if (res) {
+        fprintf(stderr, "crypto_sign_keypair -> FAIL\n");
+        ret = 1;
+        goto end;
+    }
 
-  // choose a random message
-  randombytes(msg, msglen);
+    // choose a random message
+    randombytes(msg, msglen);
 
-  res = crypto_sign(sm, &smlen, msg, msglen, sk);
-  if (res) {
-    fprintf(stderr, "crypto_sign -> FAIL\n");
-    ret = 1;
-    goto end;
-  }
+    res = crypto_sign(sm, &smlen, msg, msglen, sk);
+    if (res) {
+        fprintf(stderr, "crypto_sign -> FAIL\n");
+        ret = 1;
+        goto end;
+    }
 
-  // This string is larger than necessary, but gcc is not smart enough
-  // to detect that iter < 1000000 in the snprintf call below
-  char filename[sizeof("testcases/SQIsign_lvl1/signature4294967296.bin") + 1];
-  if (iter > 999999) {
-    fprintf(stderr, "Too many iterations: %d\n", iter);
-    ret = 1;
-    goto end;
-  }
-  snprintf(filename, sizeof(filename), "testcases/%s/signature%06d.bin",
-           CRYPTO_ALGNAME, iter);
-  f = fopen(filename, "wb");
-  if (!f) {
-    fprintf(stderr,
-            "Can't open file: %s (have you created the testcases/%s folder?)\n",
-            filename, CRYPTO_ALGNAME);
-    ret = 1;
-    goto end;
-  }
+    // This string is larger than necessary, but gcc is not smart enough to detect that iter < 1000000 in the snprintf
+    // call below
+    char filename[sizeof("testcases/" CRYPTO_ALGNAME "/signature4294967296.bin") + 1];
+    if (iter > 999999) {
+        fprintf(stderr, "Too many iterations: %d\n", iter);
+        ret = 1;
+        goto end;
+    }
+    snprintf(filename, sizeof(filename), "testcases/%s/signature%06d.bin", CRYPTO_ALGNAME, iter);
+    f = fopen(filename, "wb");
+    if (!f) {
+        fprintf(stderr, "Can't open file: %s (have you created the testcases/%s folder?)\n", filename, CRYPTO_ALGNAME);
+        ret = 1;
+        goto end;
+    }
 
-  if (fwrite(pk, CRYPTO_PUBLICKEYBYTES, 1, f) != 1) {
-    fprintf(stderr, "Error writing public key to file\n");
-    ret = 1;
-    goto end;
-  }
-  if (fwrite(sm, smlen, 1, f) != 1) {
-    fprintf(stderr, "Error writing signature to file\n");
-    ret = 1;
-    goto end;
-  }
+    if (fwrite(pk, CRYPTO_PUBLICKEYBYTES, 1, f) != 1) {
+        fprintf(stderr, "Error writing public key to file\n");
+        ret = 1;
+        goto end;
+    }
+    if (fwrite(sm, smlen, 1, f) != 1) {
+        fprintf(stderr, "Error writing signature to file\n");
+        ret = 1;
+        goto end;
+    }
 
 end:
-  if (f)
-    fclose(f);
+    if (f)
+        fclose(f);
 
-  free(sk);
-  free(pk);
-  free(sm);
+    free(sk);
+    free(pk);
+    free(sm);
 
-  return ret;
+    return ret;
 }
+
+// clang-format off
 
 // Brief fuzzing tutorial (assumes level 1, but works for other levels)
 // Assumes an Intel Linux system
@@ -108,17 +109,17 @@ end:
 // 4. cd to the build/apps folder
 //
 // 5. Create required folders:
-//    mkdir -p testcases/SQIsign_lvl{1,3,5}
+//    mkdir -p testcases/SQIsign_p{324_3,500_27,664_17}
 //
-// 6. Run ./fuzz_sign_lvl1 to create some initial testcases
+// 6. Run ./fuzz_sign_p324_3 to create some initial testcases
 //
 // 7. Run:
-//    tmux new-session -s afl1 afl-fuzz -i testcases/SQIsign_lvl1/ -o syncdir/ -D -M fuzz1 -- ./fuzz_verify_lvl1
+//    tmux new-session -s afl1 afl-fuzz -i testcases/SQIsign_p324_3/ -o syncdir/ -D -M fuzz1 -- ./fuzz_verify_p324_3
 //
 // 8. Optionally run using other cores in the machine (e.g. for 24 cores),
 //    for i in $(seq 2 24)
 //    do
-//      tmux new-session -s afl$i -d afl-fuzz -d -i testcases/SQIsign_lvl1/ -o syncdir/ -S fuzz$i -- ./fuzz_verify_lvl1
+//      tmux new-session -s afl$i -d afl-fuzz -d -i testcases/SQIsign_p324_3/ -o syncdir/ -S fuzz$i -- ./fuzz_verify_p324_3
 //    done
 //
 // 9. Attach to a specific instance by running:
@@ -128,24 +129,27 @@ end:
 //     afl-whatsup syncdir/
 //
 // 11. "Interesting" signatures, in a binary format understood by
-//     fuzz_verify_lvl1, will be found in syncdir/fuzz$i/crashes; to
-//     reproduce the crash, pipe one of these files to fuzz_verify_lvl1
+//     fuzz_verify_p324_3, will be found in syncdir/fuzz$i/crashes; to
+//     reproduce the crash, pipe one of these files to fuzz_verify_p324_3
+
+// clang-format on
 
 int
-main(int argc, char *argv[]) {
-  int testcases = 10;
+main(int argc, char *argv[])
+{
+    int testcases = 10;
 
-  unsigned char seed[48];
-  randombytes_select(seed, sizeof(seed));
-  randombytes_init(seed, NULL, 256);
+    unsigned char seed[48];
+    randombytes_select(seed, sizeof(seed));
+    randombytes_init(seed, NULL, 256);
 
-  if (argc == 2) {
-    sscanf(argv[1], "--testcases=%d", &testcases);
-  }
+    if (argc == 2) {
+        sscanf(argv[1], "--testcases=%d", &testcases);
+    }
 
-  for (int i = 0; i < testcases; ++i) {
-    example_sqisign(i);
-  }
+    for (int i = 0; i < testcases; ++i) {
+        example_sqisign(i);
+    }
 
-  return 0;
+    return 0;
 }

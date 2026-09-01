@@ -1,4 +1,4 @@
-// pqm4 KAT generator
+// pqm4 glue generator
 
 // SPDX-License-Identifier: Apache-2.0 and Unknown
 
@@ -42,15 +42,12 @@ protection within the United States.
 #define STRINGIFY2(x) #x
 #define STRINGIFY(x) STRINGIFY2(x)
 
-#define MAX_MARKER_LEN 50
-
 #define KAT_SUCCESS 0
 #define KAT_FILE_OPEN_ERROR -1
-#define KAT_DATA_ERROR -3
 #define KAT_CRYPTO_FAILURE -4
 
-#define NUM_KATS 2
-#define MAX_MSG_LEN 59
+// Message length used by the host self-check below; matches the MLEN of pqm4's test.c/stack.c
+#define MSG_LEN 32
 
 void output_header(FILE *fp) {
   const char header[] =
@@ -99,78 +96,46 @@ void output_rng(FILE *fp) {
     "#include \"randombytes.h\"\n"
     "\n"
     "#endif /* rng_h */\n";
-  
+
   fputs(rng, fp);
 }
 
-void output_preamble(FILE *fp) {
-  const char preamble[] =
+// Wrappers adapting the scheme's sqisign_* functions (unsigned long long lengths, NIST convention)
+// to pqm4's crypto_sign_* API (size_t lengths)
+void output_implementation(FILE *fp) {
+  const char api[] =
     "// SPDX-License-Identifier: Apache-2.0\n"
     "\n"
     "#include <api.h>\n"
+    "#include <encoded_sizes.h>\n"
     "#include <sig.h>\n"
-    "#include <string.h>\n"
     "\n"
-    "typedef struct {\n"
-    "  size_t mlen;\n"
-    "  char msg[" STRINGIFY(MAX_MSG_LEN) "];\n"
-    "  size_t smlen;\n"
-    "  char sm[" STRINGIFY(MAX_MSG_LEN) " + CRYPTO_BYTES];\n"
-    "} SQISign_KAT_t;\n"
-    "\n";
-
-  fputs(preamble, fp);
-}
-
-void output_pk(FILE *fp, const unsigned char *pk) {
-  fprintf(fp, "const char kat_" STRINGIFY(SQISIGN_VARIANT) "_pk[CRYPTO_PUBLICKEYBYTES] = {\n  ");
-  for (int i = 0; i < CRYPTO_PUBLICKEYBYTES; i++) {
-    fprintf(fp, "0x%02X, ", pk[i]);
-  }
-  fprintf(fp, "\n};\n\n");
-}
-
-void output_message_signature(FILE *fp, const unsigned char *m, unsigned long long mlen, const unsigned char *sm, unsigned long long smlen) {
-  fprintf(fp, "  {\n"
-              "    .mlen = %llu,\n"
-              "    .msg = { ", mlen);
-  for (unsigned long long i = 0; i < mlen; i++) {
-    fprintf(fp, "0x%02X, ", m[i]);
-  }
-  fprintf(fp, "},\n"
-              "    .smlen = %llu + CRYPTO_BYTES,\n"
-              "    .sm = { ", mlen);
-  for (unsigned long long i = 0; i < smlen; i++) {
-    fprintf(fp, "0x%02X, ", sm[i]);
-  }
-  fprintf(fp, "},\n"
-              "  },\n");
-}
-
-void output_implementation(FILE *fp) {
-  const char api[] =
+    "// The CRYPTO_* macros in api.h and the sizes in encoded_sizes.h are generated separately. Callers allocate by\n"
+    "// the former, while the library checks lengths against the latter, so a mismatch would mean undersized buffers\n"
+    "// at runtime.\n"
+    "_Static_assert(CRYPTO_BYTES == SIGNATURE_BYTES, \"api.h and encoded_sizes.h disagree on the signature size\");\n"
+    "_Static_assert(CRYPTO_PUBLICKEYBYTES == PUBLICKEY_BYTES,\n"
+    "               \"api.h and encoded_sizes.h disagree on the public key size\");\n"
+    "_Static_assert(CRYPTO_SECRETKEYBYTES == SECRETKEY_BYTES,\n"
+    "               \"api.h and encoded_sizes.h disagree on the secret key size\");\n"
+    "\n"
     "int crypto_sign_keypair(unsigned char *pk, unsigned char *sk) {\n"
-    "  memcpy(pk, kat_" STRINGIFY(SQISIGN_VARIANT) "_pk, CRYPTO_PUBLICKEYBYTES);\n"
-    "  // We don't need the secret key\n"
-    "  memset(sk, 0, CRYPTO_SECRETKEYBYTES);\n"
+    "  return sqisign_keypair(pk, sk);\n"
     "}\n"
     "\n"
     "int crypto_sign(unsigned char *sm, size_t *smlen, const unsigned char *m,\n"
     "                size_t mlen, const unsigned char *sk) {\n"
-    "  for (size_t i = 0; i < sizeof(kat_" STRINGIFY(SQISIGN_VARIANT) ") / sizeof(kat_" STRINGIFY(SQISIGN_VARIANT) "[0]); i++) {\n"
-    "    if (mlen == kat_" STRINGIFY(SQISIGN_VARIANT) "[i].mlen) {\n"
-    "      memcpy(sm, kat_" STRINGIFY(SQISIGN_VARIANT) "[i].sm, kat_" STRINGIFY(SQISIGN_VARIANT) "[i].smlen);\n"
-    "      *smlen = kat_" STRINGIFY(SQISIGN_VARIANT) "[i].smlen;\n"
-    "      return 0;\n"
-    "    }\n"
+    "  unsigned long long smlen_ull = 0;\n"
+    "  int ret = sqisign_sign(sm, &smlen_ull, m, mlen, sk);\n"
+    "  if (smlen) {\n"
+    "    *smlen = smlen_ull;\n"
     "  }\n"
-    "\n"
-    "  return 1;\n"
+    "  return ret;\n"
     "}\n"
     "\n"
     "int crypto_sign_open(unsigned char *m, size_t *mlen, const unsigned char *sm,\n"
     "                     size_t smlen, const unsigned char *pk) {\n"
-    "  unsigned long long mlen_ull = *mlen;\n"
+    "  unsigned long long mlen_ull = 0;\n"
     "  int ret = sqisign_open(m, &mlen_ull, sm, smlen, pk);\n"
     "  if (mlen) {\n"
     "    *mlen = mlen_ull;\n"
@@ -181,72 +146,61 @@ void output_implementation(FILE *fp) {
   fputs(api, fp);
 }
 
-int main(void) {
-  // pqm4 KATs use only all-zeros messages, one of length 32 and another of length 59;
-  // arrays whose dimension are the length of the message are declared the size of the
-  // largest of the two, but for the former, only 32 out of 59 bytes are actually used
-  unsigned char seed[NUM_KATS][48];
+int main(int argc, char **argv) {
+  // Output directory for the generated rng.h/api.h/pqm4_api.c
+  const char *outdir = "src/pqm4/sqisign_" STRINGIFY(SQISIGN_VARIANT) "/ref";
+  char path[1024];
   unsigned char entropy_input[48];
-  const unsigned char m[NUM_KATS][MAX_MSG_LEN] = { { 0 }, { 0 } };
-  unsigned char sm[NUM_KATS][MAX_MSG_LEN + CRYPTO_BYTES] = { { 0 }, { 0 } };
-  unsigned char m1[MAX_MSG_LEN];
-  const unsigned long long mlen[2] = { 32, 59 };
-  unsigned long long smlen[2], mlen1;
+  const unsigned char m[MSG_LEN] = { 0 };
+  unsigned char sm[MSG_LEN + CRYPTO_BYTES];
+  unsigned char m1[MSG_LEN];
+  unsigned long long smlen, mlen1;
   unsigned char pk[CRYPTO_PUBLICKEYBYTES], sk[CRYPTO_SECRETKEYBYTES];
   int ret_val;
+
+  if (argc > 1) {
+    outdir = argv[1];
+  }
 
   for (int i = 0; i < 48; i++)
     entropy_input[i] = i;
 
   randombytes_init(entropy_input, NULL, 256);
 
-  // Generate the keypair, shared between both KATs, as required for pqm4
+  // Self-check: a keypair/sign/open round trip on the host, so that a broken build cannot
+  // silently generate the pqm4 glue
   if ((ret_val = crypto_sign_keypair(pk, sk)) != 0) {
     printf("crypto_sign_keypair returned <%d>\n", ret_val);
     return KAT_CRYPTO_FAILURE;
   }
 
-  // Choose two seeds (for the 32-byte and 59-byte KATs)
-  for (int i = 0; i < NUM_KATS; i++)
-    randombytes(seed[i], 48);
+  if ((ret_val = crypto_sign(sm, &smlen, m, MSG_LEN, sk)) != 0) {
+    printf("crypto_sign returned <%d>\n", ret_val);
+    return KAT_CRYPTO_FAILURE;
+  }
 
-  // Fill m1 with random bytes. Note that the memcmp check below for a valid signature
-  // compares m1 with m[i], but since the KATs use all-zero messages, the comparison
-  // may suceed even if m was untouched from a previous iteration. This ensures that
-  // memcmp will fail in that case.
-  randombytes(m1, MAX_MSG_LEN);
+  // Fill m1 with random bytes: the message is all-zero, so the memcmp check below could
+  // succeed even if crypto_sign_open never wrote to m1
+  randombytes(m1, MSG_LEN);
 
-  for (int i = 0; i < NUM_KATS; i++) {
-    randombytes_init(seed[i], NULL, 256);
+  if ((ret_val = crypto_sign_open(m1, &mlen1, sm, smlen, pk)) != 0) {
+    printf("crypto_sign_open returned <%d>\n", ret_val);
+    return KAT_CRYPTO_FAILURE;
+  }
 
-    if ((ret_val = crypto_sign(sm[i], &smlen[i], m[i], mlen[i], sk)) != 0) {
-      printf("crypto_sign returned <%d>\n", ret_val);
-      return KAT_CRYPTO_FAILURE;
-    }
+  if (mlen1 != MSG_LEN) {
+    printf("crypto_sign_open returned bad 'mlen': Got <%llu>, expected <%d>\n", mlen1, MSG_LEN);
+    return KAT_CRYPTO_FAILURE;
+  }
 
-    if ((ret_val = crypto_sign_open(m1, &mlen1, sm[i], smlen[i], pk)) != 0) {
-      printf("crypto_sign_open returned <%d>\n", ret_val);
-      return KAT_CRYPTO_FAILURE;
-    }
-
-    if (mlen[i] != mlen1) {
-      printf(
-          "crypto_sign_open returned bad 'mlen': Got <%llu>, expected <%llu>\n",
-          mlen1, mlen[i]);
-      return KAT_CRYPTO_FAILURE;
-    }
-
-    if (memcmp(m, m1, mlen[i])) {
-      printf("crypto_sign_open returned bad 'm' value\n");
-      return KAT_CRYPTO_FAILURE;
-    }
-
-    // Fill m1 with random bytes for the next iteration
-    randombytes(m1, MAX_MSG_LEN);
-  }  
+  if (memcmp(m, m1, MSG_LEN)) {
+    printf("crypto_sign_open returned bad 'm' value\n");
+    return KAT_CRYPTO_FAILURE;
+  }
 
   // Output rng.h
-  FILE *fp = fopen("src/pqm4/sqisign_" STRINGIFY(SQISIGN_VARIANT) "/ref/rng.h", "w");
+  snprintf(path, sizeof(path), "%s/rng.h", outdir);
+  FILE *fp = fopen(path, "w");
 
   if (!fp) {
     printf("Couldn't open rng.h file for writing. Are you in the correct folder?\n");
@@ -258,7 +212,8 @@ int main(void) {
   fclose(fp);
 
   // Output the header file
-  fp = fopen("src/pqm4/sqisign_" STRINGIFY(SQISIGN_VARIANT) "/ref/api.h", "w");
+  snprintf(path, sizeof(path), "%s/api.h", outdir);
+  fp = fopen(path, "w");
 
   if (!fp) {
     printf("Couldn't open api.h file for writing. Are you in the correct folder?\n");
@@ -270,24 +225,13 @@ int main(void) {
   fclose(fp);
 
   // Output the implementation
-  fp = fopen("src/pqm4/sqisign_" STRINGIFY(SQISIGN_VARIANT) "/ref/pqm4_api.c", "w");
+  snprintf(path, sizeof(path), "%s/pqm4_api.c", outdir);
+  fp = fopen(path, "w");
 
   if (!fp) {
     printf("Couldn't open pqm4_api.c file for writing. Are you in the correct folder?\n");
     return KAT_FILE_OPEN_ERROR;
   }
-
-  output_preamble(fp);
-
-  output_pk(fp, pk);
-
-  fprintf(fp, "const SQISign_KAT_t kat_" STRINGIFY(SQISIGN_VARIANT) "[%d] = {\n", NUM_KATS);
-
-  for (int i = 0; i < NUM_KATS; i++) {
-    output_message_signature(fp, m[i], mlen[i], sm[i], smlen[i]);
-  }
-
-  fprintf(fp, "};\n\n");
 
   output_implementation(fp);
 

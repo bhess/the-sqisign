@@ -49,7 +49,7 @@ int ReadHex(FILE *infile, unsigned char *A, int Length, char *str);
 void fprintBstr(FILE *fp, char *S, unsigned char *A, unsigned long long L);
 
 int main(void) {
-  char fn_req[32], fn_rsp[32];
+  char fn_req[64], fn_rsp[64];
   FILE *fp_req, *fp_rsp;
   unsigned char seed[48];
   unsigned char msg[3300];

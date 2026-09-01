@@ -569,6 +569,10 @@ void shake256_inc_ctx_clone(shake256incctx *dest, const shake256incctx *src) {
     memcpy(dest->ctx, src->ctx, PQC_SHAKEINCCTX_BYTES);
 }
 
+void shake256_inc_ctx_reset(shake256incctx *state) {
+    keccak_inc_init(state->ctx);
+}
+
 void shake256_inc_ctx_release(shake256incctx *state) {
     (void)state;
 }

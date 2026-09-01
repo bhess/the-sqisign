@@ -15,7 +15,7 @@ fi
 
 mkdir -p build_broadwell && cd build_broadwell && cmake -DSQISIGN_BUILD_TYPE=broadwell .. && make -j8 && cd ..
 mkdir -p build && cd build && cmake .. && make -j8
-find . ../build_broadwell -name '*.a' -exec nm {} \; | grep '.c.o:\|T ' | scala -nc ../scripts/Namespace.scala > sqisign_namespace.h
+find . ../build_broadwell -name '*.a' -exec nm {} \; | grep -E '\.c\.o:| [TDBRCS] ' | scala -nc ../scripts/Namespace.scala > sqisign_namespace.h
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' 's|#define DISABLE_NAMESPACING|//#define DISABLE_NAMESPACING|' ../include/sqisign_namespace.h

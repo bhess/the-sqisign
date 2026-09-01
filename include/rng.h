@@ -9,14 +9,15 @@
  * Randombytes initialization.
  * Initialization may be needed for some random number generators (e.g. CTR-DRBG).
  *
+ * The state was made thread-local, so now the initialization only affects the current thread; in multi-threaded code,
+ * make sure to call it for every thread, otherwise you will get the default zeroed state.
+ *
  * @param[in] entropy_input 48 bytes entropy input
  * @param[in] personalization_string Personalization string
  * @param[in] security_strength Security string
  */
 SQISIGN_API
-void randombytes_init(unsigned char *entropy_input,
-                      unsigned char *personalization_string,
-                      int security_strength);
+void randombytes_init(unsigned char *entropy_input, unsigned char *personalization_string, int security_strength);
 
 /**
  * Random byte generation using /dev/urandom.

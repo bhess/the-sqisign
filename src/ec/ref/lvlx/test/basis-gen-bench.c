@@ -26,7 +26,7 @@ cmp_u64(const void *v1, const void *v2)
 }
 
 void
-bench_basis_generation(unsigned int n, int iterations)
+ec_bench_basis_generation(unsigned int n, int iterations)
 {
     int i, j;
     uint64_t cycles1, cycles2;
@@ -46,7 +46,7 @@ bench_basis_generation(unsigned int n, int iterations)
     for (i = 0; i < 20; i++) {
         cycles1 = cpucycles();
         for (j = 0; j < iterations; j++) {
-            (void)ec_curve_to_basis_2f_to_hint(&basis, &curve, n);
+            (void)ec_curve_to_basis_2f_to_hint(&basis, &curve, n, 0);
         }
         cycles2 = cpucycles();
         cycle_runs[i] = cycles2 - cycles1;
@@ -58,7 +58,7 @@ bench_basis_generation(unsigned int n, int iterations)
 }
 
 void
-bench_basis_generation_from_hint(unsigned int n, int iterations)
+ec_bench_basis_generation_from_hint(unsigned int n, int iterations)
 {
     int i, j;
     uint64_t cycles1, cycles2;
@@ -74,7 +74,7 @@ bench_basis_generation_from_hint(unsigned int n, int iterations)
     fp2_set_one(&(curve.C));
     ec_curve_normalize_A24(&curve);
 
-    uint8_t hint = ec_curve_to_basis_2f_to_hint(&basis, &curve, n);
+    uint8_t hint = ec_curve_to_basis_2f_to_hint(&basis, &curve, n, 0);
 
     // Full even torsion generation without hints
     for (i = 0; i < 20; i++) {
@@ -92,17 +92,17 @@ bench_basis_generation_from_hint(unsigned int n, int iterations)
 }
 
 void
-bench_basis(int iterations)
+ec_bench_basis(int iterations)
 {
     printf("\n-------------------------------------------------------------------------------------"
            "-------------------\n\n");
     printf("Benchmarking E[2^n] basis generation for " STRINGIFY(SQISIGN_VARIANT) ": \n\n");
-    bench_basis_generation(TORSION_EVEN_POWER, iterations);
-    bench_basis_generation(128, iterations);
+    ec_bench_basis_generation(TORSION_EVEN_POWER, iterations);
+    ec_bench_basis_generation(128, iterations);
 
     printf("\nBenchmarking E[2^n] basis generation with hint for " STRINGIFY(SQISIGN_VARIANT) ": \n\n");
-    bench_basis_generation_from_hint(TORSION_EVEN_POWER, iterations);
-    bench_basis_generation_from_hint(128, iterations);
+    ec_bench_basis_generation_from_hint(TORSION_EVEN_POWER, iterations);
+    ec_bench_basis_generation_from_hint(128, iterations);
 }
 
 int
@@ -138,6 +138,6 @@ main(int argc, char *argv[])
 
     cpucycles_init();
 
-    bench_basis(iterations);
+    ec_bench_basis(iterations);
     return 0;
 }

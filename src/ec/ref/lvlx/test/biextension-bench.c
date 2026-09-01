@@ -17,7 +17,6 @@ biextension_bench(uint64_t bench)
     uint64_t t0, t1;
     uint32_t e = TORSION_EVEN_POWER;
 
-    fp2_t r1;
     ec_curve_t curve;
     ec_point_t tmp;
 
@@ -35,8 +34,8 @@ biextension_bench(uint64_t bench)
     ec_curve_normalize_A24(&curve);
 
     // Compute 2^e torsion on curve and copy to a second basis
-    (void)ec_curve_to_basis_2f_to_hint(&BPQ, &curve, e);
-    copy_basis(&BRS, &BPQ);
+    (void)ec_curve_to_basis_2f_to_hint(&BPQ, &curve, e, 0);
+    ec_copy_basis(&BRS, &BPQ);
 
     // Benchmark doubling on the curve
     printf("\n\nBenchmarking doublings\n");
@@ -47,26 +46,10 @@ biextension_bench(uint64_t bench)
     t1 = cpucycles();
     printf("\x1b[34mAvg doubling: %'" PRIu64 " cycles\x1b[0m\n", (t1 - t0) / bench);
 
-    printf("\n\nBenchmarking (Weil) pairings\n");
-    t0 = cpucycles();
-    for (uint64_t i = 0; i < bench; ++i) {
-        weil(&r1, e, &BPQ.P, &BPQ.Q, &BPQ.PmQ, &curve);
-    }
-    t1 = cpucycles();
-    printf("\x1b[34mAvg pairing: %'" PRIu64 " cycles\x1b[0m\n", (t1 - t0) / bench);
-
-    printf("\n\nBenchmarking (Weil) dlogs\n");
-    t0 = cpucycles();
-    for (uint64_t i = 0; i < bench; ++i) {
-        ec_dlog_2_weil(scal_r1, scal_r2, scal_s1, scal_s2, &BPQ, &BRS, &curve, e);
-    }
-    t1 = cpucycles();
-    printf("\x1b[34mAvg pairing dlog: %'" PRIu64 " cycles\x1b[0m\n", (t1 - t0) / bench);
-
     printf("\n\nBenchmarking (Tate) dlogs\n");
     t0 = cpucycles();
     for (uint64_t i = 0; i < bench; ++i) {
-        ec_dlog_2_tate(scal_r1, scal_r2, scal_s1, scal_s2, &BPQ, &BRS, &curve, e);
+        pairing_dlog_2_tate(scal_r1, scal_r2, scal_s1, scal_s2, &BPQ, &BRS, &curve, e);
     }
     t1 = cpucycles();
     printf("\x1b[34mAvg Tate dlog: %'" PRIu64 " cycles\x1b[0m\n", (t1 - t0) / bench);

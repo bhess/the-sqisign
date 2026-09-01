@@ -19,15 +19,22 @@
 #include <tutil.h>
 #endif
 
-static uint32_t rand_u32()
+static uint32_t
+rand_u32()
 {
     unsigned char buf[4];
     if (randombytes(buf, sizeof(buf)))
         abort();
-    return ((uint32_t) buf[3] << 24)
-         | ((uint32_t) buf[2] << 16)
-         | ((uint32_t) buf[1] <<  8)
-         | ((uint32_t) buf[0] <<  0);
+    return ((uint32_t)buf[3] << 24) | ((uint32_t)buf[2] << 16) | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[0] << 0);
+}
+
+static void
+dump_bytes(char const *name, unsigned char const *bytes, size_t len)
+{
+    printf("%s = ", name);
+    for (size_t i = 0; i < len; ++i)
+        printf("%02hhx", bytes[i]);
+    printf("\n");
 }
 
 /**
@@ -39,18 +46,22 @@ static uint32_t rand_u32()
  * @return int return code
  */
 static int
-example_sqisign(void)
+example_sqisign(int dump)
 {
-
     unsigned long long msglen = rand_u32() % 100;
     unsigned long long smlen = CRYPTO_BYTES + msglen;
+
+    // msglen doubles as an out-parameter of crypto_sign_open below,
+    // so it stops describing the buffers after the first one is called.
+    // Keep the extent separately and index the buffers by it.
+    const size_t msgbuf_len = msglen;
 
     unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
     unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);
 
     unsigned char *sm = calloc(smlen, 1);
 
-    unsigned char msg[msglen], msg2[msglen];
+    unsigned char msg[msgbuf_len], msg2[msgbuf_len];
 
     printf("Example with %s\n", CRYPTO_ALGNAME);
 
@@ -63,9 +74,17 @@ example_sqisign(void)
         printf("OK\n");
     }
 
+    if (dump) {
+        dump_bytes("sk", sk, CRYPTO_SECRETKEYBYTES);
+        dump_bytes("pk", pk, CRYPTO_PUBLICKEYBYTES);
+    }
+
     // choose a random message
-    for (size_t i = 0; i < msglen; ++i)
+    for (size_t i = 0; i < msgbuf_len; ++i)
         msg[i] = rand_u32();
+
+    if (dump)
+        dump_bytes("msg", msg, msgbuf_len);
 
     printf("crypto_sign -> ");
     res = crypto_sign(sm, &smlen, msg, msglen, sk);
@@ -76,18 +95,20 @@ example_sqisign(void)
         printf("OK\n");
     }
 
+    if (dump)
+        dump_bytes("sm", sm, smlen);
+
     printf("crypto_sign_open (with correct signature) -> ");
     res = crypto_sign_open(msg2, &msglen, sm, smlen, pk);
-    if (res || msglen != sizeof(msg) || memcmp(msg, msg2, msglen)) {
+    if (res || msglen != sizeof(msg) || memcmp(msg, msg2, msglen) != 0) {
         printf("FAIL\n"); // signature was not accepted!?
         goto err;
     } else {
         printf("OK\n");
     }
 
-
     // fill with random bytes
-    for (size_t i = 0; i < msglen; ++i)
+    for (size_t i = 0; i < msgbuf_len; ++i)
         msg2[i] = rand_u32();
 
     // let's try a single bit flip
@@ -101,16 +122,17 @@ example_sqisign(void)
         printf("FAIL\n"); // signature was accepted anyway!?
         res = -1;
         goto err;
-    }
-    else {
+    } else {
         printf("OK\n");
         res = 0;
 
         if (msglen)
             printf("WARNING: verification failed but the message length was returned nonzero; misuse-prone API\n");
 
+        // Scan the whole buffer, not the returned msglen: crypto_sign_open reports 0 on failure, so bounding this by
+        // msglen would scan nothing and the warning below could never fire.
         unsigned char any = 0;
-        for (size_t i = 0; i < msglen; ++i)
+        for (size_t i = 0; i < msgbuf_len; ++i)
             any |= msg2[i];
         if (any)
             printf("WARNING: verification failed but the message buffer was not zeroed out; misuse-prone API\n");
@@ -129,11 +151,17 @@ main(int argc, char *argv[])
 {
     uint32_t seed[12] = { 0 };
     int help = 0;
+    int dump = 0;
     int seed_set = 0;
 
     for (int i = 1; i < argc; i++) {
         if (!help && strcmp(argv[i], "--help") == 0) {
             help = 1;
+            continue;
+        }
+
+        if (!dump && strcmp(argv[i], "--dump") == 0) {
+            dump = 1;
             continue;
         }
 
@@ -164,5 +192,5 @@ main(int argc, char *argv[])
 
     randombytes_init((unsigned char *)seed, NULL, 256);
 
-    return example_sqisign();
+    return example_sqisign(dump);
 }

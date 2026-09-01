@@ -11,10 +11,10 @@
 #include <quaternion.h>
 #include <verification.h>
 
-/** @defgroup signature SQIsignHD key generation and signature protocols
+/** @defgroup signature SQIsign key generation and signature protocols
  * @{
  */
-/** @defgroup signature_t Types for SQIsignHD key generation and signature protocols
+/** @defgroup signature_t Types for SQIsign key generation and signature protocols
  * @{
  */
 
@@ -28,10 +28,9 @@
 typedef struct secret_key
 {
     ec_curve_t curve; /// the public curve, but with little precomputations
-    quat_left_ideal_t secret_ideal;
-    ibz_mat_2x2_t mat_BAcan_to_BA0_two; // mat_BA0_to_BAcan*BA0 = BAcan, where BAcan is the
-                                        // canonical basis of EA[2^e], and BA0 the image of the
-                                        // basis of E0[2^e] through the secret isogeny
+    quat_ideal_t secret_ideal;
+    ibz_mat_2x2_t mat_BAcan_to_BA0_two; // mat_BA0_to_BAcan*BA0 = BAcan, where BAcan is the canonical basis of EA[2^e],
+                                        // and BA0 the image of the basis of E0[2^e] through the secret isogeny
     ec_basis_t canonical_basis;         // the canonical basis of the public key curve
 } secret_key_t;
 
@@ -41,7 +40,6 @@ typedef struct secret_key
 /*************************** Functions *****************************/
 
 void secret_key_init(secret_key_t *sk);
-void secret_key_finalize(secret_key_t *sk);
 
 /**
  * @brief Key generation

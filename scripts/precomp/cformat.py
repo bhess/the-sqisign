@@ -1,22 +1,48 @@
 #!/usr/bin/env python3
-import sys, itertools
+import sys, itertools, os, re, glob
 from math import ceil, floor, log
 import sage.all
+from parameters import ibz_num_limbs
+
+
+def _ref_field_radix(word_size):
+    """Radix modarith chose for the current variant's reference field code.
+
+    Read straight from the generated gf field file so it always matches the
+    runtime field arithmetic, for any prime — no per-prime table needed. Run
+    from the variant's precomp dir (src/precomp/ref/<variant>), as the precomp
+    sage scripts are."""
+    if word_size == 16:
+        return 13  # SQIsign has no 16-bit field impl; the RADIX==16 branch is never compiled
+    variant = os.path.basename(os.getcwd())
+    pattern = os.path.join('..', '..', '..', 'gf', 'ref', variant, f'fp_*_{word_size}.inc')
+    for path in sorted(glob.glob(pattern)):
+        m = re.search(r'#define\s+Radix\s+(\d+)', open(path).read())
+        if m:
+            return int(m.group(1))
+    raise ValueError(f'could not read field radix for word size {word_size} from '
+                     f'{pattern}; is the gf/ref/{variant} field code generated?')
 
 class Ibz:
     def __init__(self, v):
         self.v = int(v)
     def _literal(self, sz):
         val = int(self.v)
+        bit_len = val.bit_length()+1
+        num_limbs = (bit_len + sz-1) // sz if val else 0
+        negative_bit = bit_len * num_limbs
         sgn = val < 0
-        num_limbs = (abs(val).bit_length() + sz-1) // sz if val else 0
-        limbs = [(abs(val) >> sz*i) & (2**sz-1) for i in range(num_limbs or 1)]
+        if sgn: val += (1 << negative_bit) #esures the value is positive
+        limbs = [(val >> sz*i) & (2**sz-1) for i in range(num_limbs or 1)]
+        if sgn: limbs[num_limbs-1] |= (1 << sz) #recover the negative-valued bit if needed
+        limbs = limbs + [0 for _ in range (0,ibz_num_limbs*(64//sz)-len(limbs))]
+        for l in limbs: 
+            assert(l < (2**sz))
         data = {
-                '._mp_alloc': 0,
-                '._mp_size': (-1)**sgn * num_limbs,
-                '._mp_d': '(mp_limb_t[]) {' + ','.join(map(hex,limbs)) + '}',
+                '.bitlen': str(bit_len),
+                '.limbs': '{' + ','.join(map(hex,limbs)) + '}',
             }
-        return '{{' + ', '.join(f'{k} = {v}' for k,v in data.items()) + '}}'
+        return '{'+ ','.join(f'{k} = {v}' for k,v in data.items()) + '}'
 
 class FpEl:
     ref_p5248_radix_map  = { 16: 13, 32: 29, 64: 51 }
@@ -28,16 +54,8 @@ class FpEl:
         self.montgomery = montgomery
     def __get_radix(self, word_size, arith=None):
         if arith == "ref" or arith is None:
-            # lvl1
-            if self.p == 0x4ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff:
-                return self.ref_p5248_radix_map[word_size]
-            # lvl3
-            elif self.p == 0x40ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff:
-                return self.ref_p65376_radix_map[word_size]
-            # lvl5
-            elif self.p == 0x1afffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff:
-                return self.ref_p27500_radix_map[word_size]
-            raise ValueError(f'Invalid prime \"{self.p}\"')
+            # read the radix modarith wrote into the field file
+            return _ref_field_radix(word_size)
         elif arith == "broadwell":
             return word_size
         raise ValueError(f'Invalid arithmetic implementation type \"{arith}\"')
@@ -87,15 +105,18 @@ class Object:
             if isinstance(obj, Ibz):
                 literal = "\n#if 0"
                 for sz in (16, 32, 64):
-                    literal += f"\n#elif GMP_LIMB_BITS == {sz}"
+                    literal += f"\n#elif RADIX == {sz}"
                     literal += f"\n{obj._literal(sz)}"
                 return literal + "\n#endif\n"
             if isinstance(obj, FpEl):
                 literal = "\n#if 0"
                 for sz in (16, 32, 64):
                     literal += f"\n#elif RADIX == {sz}"
-                    if sz == 64:
-                        literal += "\n#if defined(SQISIGN_GF_IMPL_BROADWELL)"
+                    if sz in (32, 64):
+                        # 'broadwell' means saturated limbs (radix = word size); at 32 bits that is the
+                        # layout of the m4-modarith armv7e-m code, guarded by SQISIGN_GF_IMPL_SAT32.
+                        guard = "SQISIGN_GF_IMPL_SAT64" if sz == 64 else "SQISIGN_GF_IMPL_SAT32"
+                        literal += f"\n#if defined({guard})"
                         literal += f"\n{obj._literal(sz, 'broadwell')}"
                         literal += "\n#else"
                         literal += f"\n{obj._literal(sz, 'ref')}"

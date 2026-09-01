@@ -12,14 +12,14 @@
 #include <fp2.h>
 #include <hd.h>
 
-/** @internal
+/**
  * @ingroup hd_module
- * @defgroup hd_theta Functions for theta structures
+ * @defgroup hd_theta Theta structures
  * @{
  */
 
 /**
- * @brief Perform the hadamard transform on a theta point
+ * @brief Perform the theta_hadamard transform on a theta point
  *
  * @param out Output: the theta_point
  * @param in a theta point*
@@ -28,7 +28,7 @@
  *
  */
 static inline void
-hadamard(theta_point_t *out, const theta_point_t *in)
+theta_hadamard(theta_point_t *out, const theta_point_t *in)
 {
     fp2_t t1, t2, t3, t4;
 
@@ -45,6 +45,28 @@ hadamard(theta_point_t *out, const theta_point_t *in)
     fp2_add(&out->y, &t2, &t4);
     fp2_sub(&out->z, &t1, &t3);
     fp2_sub(&out->t, &t2, &t4);
+}
+
+/**
+ * @brief compute the projective inverse of a point. Assumes it has no zero null coefficient
+ *
+ * @param inv Output: the inverse theta_point
+ * @param in a theta point*
+ * in = (x,y,z,t)
+ * out = (yzt, xzt, xyt, xyz)
+ */
+static inline void
+theta_invert_point(theta_point_t *inv, const theta_point_t *in)
+{
+    fp2_t a, b, c, d;
+    fp2_mul(&a, &in->x, &in->y);
+    fp2_mul(&d, &in->z, &in->t);
+    fp2_copy(&b, &in->x);
+    fp2_copy(&c, &in->z);
+    fp2_mul(&inv->x, &in->y, &d);
+    fp2_mul(&inv->y, &b, &d);
+    fp2_mul(&inv->z, &in->t, &a);
+    fp2_mul(&inv->t, &c, &a);
 }
 
 /**
@@ -65,7 +87,40 @@ pointwise_square(theta_point_t *out, const theta_point_t *in)
 }
 
 /**
- * @brief Square the coordinates and then perform the hadamard transform
+ * @brief Square the coordinates of a theta point
+ * @param out Output: the dot-product of those points
+ * @param P a theta point*
+ * @param Q a theta point*
+ * in = (x,y,z,t), (a,b,c,d)
+ * out = (xa, yb, zc, td)
+ *
+ */
+static inline void
+pointwise_product(theta_point_t *out, const theta_point_t *P, const theta_point_t *Q)
+{
+    fp2_mul(&out->x, &P->x, &Q->x);
+    fp2_mul(&out->y, &P->y, &Q->y);
+    fp2_mul(&out->z, &P->z, &Q->z);
+    fp2_mul(&out->t, &P->t, &Q->t);
+}
+
+/**
+ * @brief Copy a theta point
+ * @param out Output: the copy
+ * @param in a theta point*
+ *
+ */
+static inline void
+theta_copy(theta_point_t *out, const theta_point_t *in)
+{
+    fp2_copy(&out->x, &in->x);
+    fp2_copy(&out->y, &in->y);
+    fp2_copy(&out->z, &in->z);
+    fp2_copy(&out->t, &in->t);
+}
+
+/**
+ * @brief Square the coordinates and then perform the theta_hadamard transform
  *
  * @param out Output: the theta_point
  * @param in a theta point*
@@ -77,7 +132,7 @@ static inline void
 to_squared_theta(theta_point_t *out, const theta_point_t *in)
 {
     pointwise_square(out, in);
-    hadamard(out, out);
+    theta_hadamard(out, out);
 }
 
 /**
@@ -85,9 +140,10 @@ to_squared_theta(theta_point_t *out, const theta_point_t *in)
  *
  * @param A Output: the theta_structure
  *
- * if A.null_point = (x,y,z,t)
- * if (xx,yy,zz,tt) = to_squared_theta(A.null_point)
- * Computes y0,z0,t0,Y0,Z0,T0 = x/y,x/z,x/t,XX/YY,XX/ZZ,XX/TT
+ * if A.dual_null_point = (x,y,z,t)
+ * let (XX,YY,ZZ,TT) = to_squared_theta(x,y,z,t)
+ * Compute A.inv_sqr_null_point = (1, XX/YY,XX/ZZ,XX/TT)
+ * using A.precomp.
  *
  */
 void theta_precomputation(theta_structure_t *A);
@@ -103,7 +159,7 @@ void theta_precomputation(theta_structure_t *A);
  * /!\ assumes that no coordinates is zero and that the precomputation of A has been done
  *
  */
-void double_point(theta_point_t *out, theta_structure_t *A, const theta_point_t *in);
+void theta_DBL(theta_point_t *out, theta_structure_t *A, const theta_point_t *in);
 
 /**
  * @brief Compute the iterated double of the theta point in on the theta struc A
@@ -117,19 +173,25 @@ void double_point(theta_point_t *out, theta_structure_t *A, const theta_point_t 
  * /!\ assumes that no coordinates is zero and that the precomputation of A has been done
  *
  */
-void double_iter(theta_point_t *out, theta_structure_t *A, const theta_point_t *in, int exp);
+void theta_DBL_iter(theta_point_t *out, theta_structure_t *A, const theta_point_t *in, uint16_t exp);
 
-/*
+/**
  * @brief Check if a theta point is a product theta point
  *
  * @param P a theta point
  * @return 0xFFFFFFFF if true, zero otherwise
  */
-uint32_t is_product_theta_point(const theta_point_t *P);
+uint32_t theta_is_product_theta_point(const theta_point_t *P);
 
-// end hd_theta
 /**
- * @}
+ * @brief compute (fast) the dual theta null point from a theta structure.
+ *
+ * @param dual_null_point a theta point
+ * @param A a theta structure. it assumes dbl_data was computed.
+ */
+void theta_extract_dual_null_point(theta_point_t *dual_null_point, theta_structure_t *A);
+
+/** @}
  */
 
 #endif

@@ -3,72 +3,45 @@ proof.all(False)  # faster
 
 
 
-from maxorders import p, orders
-
+from parameters import p, security_bits, response_bits
 from cformat import Ibz, Object, ObjectFormatter
 
-# Prime of same size than p for random ideal of fixed norm
-bitlength_p = int(p).bit_length()
-prime_cofactor = next_prime((2^(bitlength_p)))
+from sage.algebras.quatalg.quaternion_algebra import basis_for_quaternion_lattice
+bfql = lambda els: basis_for_quaternion_lattice(els, reverse=True)
+
+Quat1, (i,j,k) = QuaternionAlgebra(-1, -p).objgens()
+assert Quat1.discriminant() == p         # ramifies correctly
+
+O0mat = matrix([list(g) for g in [Quat1(1), i, (i+j)/2, (1+k)/2]])
+O0 = Quat1.quaternion_order(list(O0mat))
+
+# Prime cofactor for random ideal given norm
+def log_prob(n,logM):
+    
+    return round(n * log(1 - 1 / (2 * logM), 2))
+
+bits_m = p.nbits() - response_bits + 2 
+
+# print(log_prob(floor(2**(response_bits + bits_m) / p), 2**(response_bits + bits_m)))
+
+while (round(log_prob(floor(2**(response_bits + bits_m) / p), response_bits + bits_m)) > (-security_bits)) : 
+    bits_m =  bits_m + 1
+
+
+prime_cofactor = next_prime(2^bits_m)
 
 algobj = [Ibz(p)]
 
-objs = \
-    [
-        [
-            # basis (columns)
-            [
-                Ibz(mat.denominator()),
-                [[Ibz(v) for v in vs]
-                    for vs in mat.transpose()*mat.denominator()],
-            ],
-            # sqrt(-q)
-            [
-                Ibz(mat.denominator()),
-                [Ibz(c) for c in ii*mat.denominator()],
-            ],
-            # sqrt(-p)
-            [
-                Ibz(1),
-                [Ibz(c) for c in (0,0,1,0)]
-            ],
-            q
-        ]
-        for q,_,mat,ii,_,_ in orders
-    ]
 
-idlobjs = \
-    [
-        [
-            # basis (columns)
-            [
-                Ibz(idl.denominator()),
-                [[Ibz(v) for v in vs]
-                    for vs in idl.transpose()*idl.denominator()],
-            ],
-            # norm
-            Ibz(abs(idl.row_space(ZZ).intersection((ZZ^4).submodule([[1,0,0,0]])).basis()[0][0])),
-            # left order
-            '&MAXORD_O0',
-        ]
-        for _,_,mat,_,idl,_ in orders
-    ]
-
-gammaobjs = \
-    [
-        [
-            Ibz(gamma.denominator()),
-            list(map(Ibz, gamma * gamma.denominator())),
-        ]
-        for _,_,_,_,_,gamma in orders
-    ]
+# basis (columns)
+# ibz_mat_4x4_t is a struct wrapping the array: one extra brace level
+O0_obj = [Ibz(O0mat.denominator()), [[[Ibz(v) for v in vs] for vs in O0mat.transpose()*O0mat.denominator()]]]
+ 
 
 objs = ObjectFormatter([
         Object('ibz_t', 'QUAT_prime_cofactor', Ibz(prime_cofactor)),
         Object('quat_alg_t', 'QUATALG_PINFTY', algobj),
-        Object('quat_p_extremal_maximal_order_t[]', 'EXTREMAL_ORDERS', objs),
-        Object('quat_left_ideal_t[]', 'CONNECTING_IDEALS', idlobjs),  # ideal corresponding to an isogeny from E0 which acts as identity w.r.t. the basis_even
-        Object('quat_alg_elem_t[]', 'CONJUGATING_ELEMENTS', gammaobjs), # elements γ such that each I has right order γ O₁ γ^-1
+        Object('quat_lattice_t', 'MAXORD_O0', O0_obj),
     ])
 
 with open('include/quaternion_data.h','w') as hfile:
@@ -77,14 +50,6 @@ with open('include/quaternion_data.h','w') as hfile:
         print(f'#include <stddef.h>', file=cfile)
         print(f'#include <stdint.h>', file=cfile)
         print(f'#include <quaternion_data.h>', file=cfile)
-
-        #FIXME this should eventually go away?
-        print(f'#define MAXORD_O0 (EXTREMAL_ORDERS->order)', file=hfile)
-        print(f'#define STANDARD_EXTREMAL_ORDER (EXTREMAL_ORDERS[0])', file=hfile)
-        print(f'#define NUM_ALTERNATE_EXTREMAL_ORDERS {len(orders)-1}', file=hfile)
-        print(f'#define ALTERNATE_EXTREMAL_ORDERS (EXTREMAL_ORDERS+1)', file=hfile)
-        print(f'#define ALTERNATE_CONNECTING_IDEALS (CONNECTING_IDEALS+1)', file=hfile)
-        print(f'#define ALTERNATE_CONJUGATING_ELEMENTS (CONJUGATING_ELEMENTS+1)', file=hfile)
 
         objs.header(file=hfile)
         objs.implementation(file=cfile)

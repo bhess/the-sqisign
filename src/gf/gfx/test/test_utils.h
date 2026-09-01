@@ -13,6 +13,9 @@
 void fp_random_test(fp_t *a);
 void fp2_random_test(fp2_t *a);
 
+// Reproducible replacement for rand(). Returns a random 31-bit integer (RAND_MAX is typically 2^31 - 1).
+uint32_t u32_random_test(void);
+
 // Comparison of u64 for qsort
 int cmp_u64(const void *v1, const void *v2);
 

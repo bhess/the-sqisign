@@ -1,16 +1,25 @@
 #!/bin/bash
+set -eu
 
-echo 'Running Script for Level 1...' 
-./build/apps/PQCgenKAT_sign_lvl1
-mv PQCsignKAT_353_SQIsign_lvl1.req ./KAT/PQCsignKAT_353_SQIsign_lvl1.req
-mv PQCsignKAT_353_SQIsign_lvl1.rsp ./KAT/PQCsignKAT_353_SQIsign_lvl1.rsp
+DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+PWD=$(pwd)
 
-echo 'Running Script for Level 3...' 
-./build/apps/PQCgenKAT_sign_lvl3
-mv PQCsignKAT_529_SQIsign_lvl3.req ./KAT/PQCsignKAT_529_SQIsign_lvl3.req
-mv PQCsignKAT_529_SQIsign_lvl3.rsp ./KAT/PQCsignKAT_529_SQIsign_lvl3.rsp
+if [ "$(readlink -f "$PWD/scripts")" != "$(readlink -f "$DIR")" ]; then
+    echo "This script must be run as scripts/gen_kat_files.sh from the repository root."
+    exit 1
+fi
 
-echo 'Running Script for Level 5...' 
-./build/apps/PQCgenKAT_sign_lvl5
-mv PQCsignKAT_701_SQIsign_lvl5.req ./KAT/PQCsignKAT_701_SQIsign_lvl5.req
-mv PQCsignKAT_701_SQIsign_lvl5.rsp ./KAT/PQCsignKAT_701_SQIsign_lvl5.rsp
+mkdir -p KAT
+cd KAT
+
+echo 'Generating KATs for p324_3...'
+../build/apps/PQCgenKAT_sign_p324_3
+
+echo 'Generating KATs for p500_27...'
+../build/apps/PQCgenKAT_sign_p500_27
+
+echo 'Generating KATs for p664_17...'
+../build/apps/PQCgenKAT_sign_p664_17
+
+echo 'Done!'
+

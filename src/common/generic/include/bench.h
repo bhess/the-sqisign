@@ -24,7 +24,8 @@
 #endif
 
 static inline void
-cpucycles_init(void) {
+cpucycles_init(void)
+{
 #if defined(__APPLE__) && defined(TARGET_ARM64)
     macos_init_rdtsc();
 #endif
@@ -74,7 +75,7 @@ ISQRT(uint64_t x)
 {
     uint32_t r = 0;
     for (ssize_t i = 31; i >= 0; --i) {
-        uint32_t s = r + (1 << i);
+        uint32_t s = r + (1u << i);
         if ((uint64_t)s * s <= x)
             r = s;
     }
@@ -82,45 +83,52 @@ ISQRT(uint64_t x)
 }
 
 static inline double
-_TRUNC(uint64_t x)
+BENCH_TRUNC(uint64_t x)
 {
+    // The first division is integer on purpose: it quantises to 1000 cycles, which is exactly the resolution BENCH_FMT
+    // prints. Changing it to x / 1000000. would round the last printed digit differently and shift every published
+    // benchmark figure, for no gain.
+    // NOLINTNEXTLINE(bugprone-integer-division) - deliberate quantisation, not lost precision
     return x / 1000 / 1000.;
 }
-#define _FMT ".3lf"
-#define _UNIT BENCH_UNIT6
+#define BENCH_FMT ".3lf"
+#define BENCH_UNIT BENCH_UNIT6
 
-#define BENCH_CODE_1(RUNS)                                                                         \
-    {                                                                                              \
-        const size_t count = (RUNS);                                                               \
-        if (!count)                                                                                \
-            abort();                                                                               \
-        uint64_t cycles, cycles1, cycles2;                                                         \
-        uint64_t cycles_list[count];                                                               \
-        cycles = 0;                                                                                \
-        for (size_t i = 0; i < count; ++i) {                                                       \
+#define BENCH_CODE_1(RUNS)                                                                                             \
+    {                                                                                                                  \
+        const size_t count = (RUNS);                                                                                   \
+        if (!count)                                                                                                    \
+            abort();                                                                                                   \
+        uint64_t cycles, cycles1, cycles2;                                                                             \
+        uint64_t *cycles_list = (uint64_t *)malloc(count * sizeof(uint64_t));                                          \
+        if (!cycles_list)                                                                                              \
+            abort();                                                                                                   \
+        cycles = 0;                                                                                                    \
+        for (size_t i = 0; i < count; ++i) {                                                                           \
             cycles1 = cpucycles();
 
-#define BENCH_CODE_2(name)                                                                         \
-    cycles2 = cpucycles();                                                                         \
-    cycles_list[i] = cycles2 - cycles1;                                                            \
-    cycles += cycles2 - cycles1;                                                                   \
-    }                                                                                              \
-    qsort(cycles_list, count, sizeof(uint64_t), CMPFUNC);                                          \
-    uint64_t variance = 0;                                                                         \
-    for (size_t i = 0; i < count; ++i) {                                                           \
-        int64_t off = cycles_list[i] - cycles / count;                                             \
-        variance += off * off;                                                                     \
-    }                                                                                              \
-    variance /= count;                                                                             \
-    printf("  %-10s", name);                                                                       \
-    printf(" | average %9" _FMT " | stddev %9" _FMT,                                               \
-           _TRUNC(cycles / count),                                                                 \
-           _TRUNC(ISQRT(variance)));                                                               \
-    printf(" | median %9" _FMT " | min %9" _FMT " | max %9" _FMT,                                  \
-           _TRUNC(cycles_list[count / 2]),                                                         \
-           _TRUNC(cycles_list[0]),                                                                 \
-           _TRUNC(cycles_list[count - 1]));                                                        \
-    printf("  (%s)\n", _UNIT);                                                                     \
+#define BENCH_CODE_2(name)                                                                                             \
+    cycles2 = cpucycles();                                                                                             \
+    cycles_list[i] = cycles2 - cycles1;                                                                                \
+    cycles += cycles2 - cycles1;                                                                                       \
+    }                                                                                                                  \
+    qsort(cycles_list, count, sizeof(uint64_t), CMPFUNC);                                                              \
+    uint64_t variance = 0;                                                                                             \
+    for (size_t i = 0; i < count; ++i) {                                                                               \
+        int64_t off = cycles_list[i] - cycles / count;                                                                 \
+        variance += off * off;                                                                                         \
+    }                                                                                                                  \
+    variance /= count;                                                                                                 \
+    printf("  %-10s", name);                                                                                           \
+    printf(" | average %9" BENCH_FMT " | stddev %9" BENCH_FMT,                                                         \
+           BENCH_TRUNC(cycles / count),                                                                                \
+           BENCH_TRUNC(ISQRT(variance)));                                                                              \
+    printf(" | median %9" BENCH_FMT " | min %9" BENCH_FMT " | max %9" BENCH_FMT,                                       \
+           BENCH_TRUNC(cycles_list[count / 2]),                                                                        \
+           BENCH_TRUNC(cycles_list[0]),                                                                                \
+           BENCH_TRUNC(cycles_list[count - 1]));                                                                       \
+    printf("  (%s)\n", BENCH_UNIT);                                                                                    \
+    free(cycles_list);                                                                                                 \
     }
 
 #endif

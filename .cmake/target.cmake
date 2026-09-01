@@ -2,7 +2,7 @@
 
 include(CheckTypeSize)
 
-function(check_target_feature CODE RUN_RESULT)
+function(check_target_feature CODE COMPILE_FLAGS RUN_RESULT)
     set(TEMP_FILE "${CMAKE_BINARY_DIR}/check_target_feature.c")
     file(WRITE
         ${TEMP_FILE}
@@ -11,11 +11,16 @@ function(check_target_feature CODE RUN_RESULT)
             return 0;
         }")
 
-    try_run(TEMP_RUN_RESULT TEMP_COMPILE_RESULT ${CMAKE_BINARY_DIR} ${TEMP_FILE})
+    if (COMPILE_FLAGS STREQUAL "")
+        try_run(TEMP_RUN_RESULT TEMP_COMPILE_RESULT ${CMAKE_BINARY_DIR} ${TEMP_FILE})
+    else()
+        try_run(TEMP_RUN_RESULT TEMP_COMPILE_RESULT ${CMAKE_BINARY_DIR} ${TEMP_FILE}
+            CMAKE_FLAGS "-DCMAKE_C_FLAGS=${COMPILE_FLAGS}")
+    endif()
 
     set(${RUN_RESULT} ${TEMP_RUN_RESULT} PARENT_SCOPE)
-    if (ARGC EQUAL 3)
-        set(${ARGV2} ${TEMP_COMPILE_RESULT} PARENT_SCOPE)
+    if (ARGC EQUAL 4)
+        set(${ARGV3} ${TEMP_COMPILE_RESULT} PARENT_SCOPE)
     endif()
 
     file(REMOVE ${TEMP_FILE})
@@ -26,7 +31,7 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch64" OR ${CMAKE_SYSTEM_PROCESSOR} MAT
     set(RADIX 64)
 
     if (NOT APPLE)
-        check_target_feature("asm volatile(\"mrs x0, PMCCNTR_EL0\" : : : \"x0\");" CYCCNT)
+        check_target_feature("asm volatile(\"mrs x0, PMCCNTR_EL0\" : : : \"x0\");" "" CYCCNT)
 
         if (CYCCNT STREQUAL "FAILED_TO_RUN")
             message(STATUS "Cycle counter not supported, reverting to fallback measurement")
@@ -65,6 +70,8 @@ endif()
 if (RADIX EQUAL 32)
     if (${SQISIGN_BUILD_TYPE} MATCHES "broadwell")
         message(FATAL_ERROR "Broadwell implementation not supported in 32-bit build")
+    elseif (${SQISIGN_BUILD_TYPE} MATCHES "arm64")
+        message(FATAL_ERROR "arm64 implementation not supported in 32-bit build")
     endif()
 else()
     # Testing for unsigned 128-bit integer support
@@ -83,12 +90,6 @@ if (RADIX EQUAL 32)
     add_compile_definitions(RADIX_32)
 elseif (RADIX EQUAL 64)
     add_compile_definitions(RADIX_64)
-endif()
-
-if (UNIX)
-    add_compile_definitions(TARGET_OS_UNIX)
-else()
-    add_compile_definitions(TARGET_OS_OTHER)
 endif()
 
 set(C_OPT_FLAGS "")

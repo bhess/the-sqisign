@@ -119,6 +119,24 @@ fp2_sqr(fp2_t *x, const fp2_t *y)
 }
 
 void
+fp2_mul_by_i(fp2_t *x, const fp2_t *y, uint32_t ctl)
+{
+    fp_t t0, t1;
+
+    fp_neg(&t0, &(y->re));
+    fp_neg(&t1, &(y->im));
+    fp_select(&(x->re), &(y->im), &t1, -ctl);
+    fp_select(&(x->im), &t0, &(y->re), -ctl);
+}
+
+void
+fp2_frob(fp2_t *out, const fp2_t *in)
+{
+    fp_copy(&(out->re), &(in->re));
+    fp_neg(&(out->im), &(in->im));
+}
+
+void
 fp2_inv(fp2_t *x)
 {
     fp_t t0, t1;
@@ -149,8 +167,8 @@ fp2_sqrt(fp2_t *a)
 {
     fp_t x0, x1, t0, t1;
 
-    /* From "Optimized One-Dimensional SQIsign Verification on Intel and
-     * Cortex-M4" by Aardal et al: https://eprint.iacr.org/2024/1563 */
+    /* From "Optimized One-Dimensional SQIsign Verification on Intel and Cortex-M4" by Aardal et al:
+     * https://eprint.iacr.org/2024/1563 */
 
     // x0 = \delta = sqrt(a0^2 + a1^2).
     fp_sqr(&x0, &(a->re));
@@ -177,28 +195,8 @@ fp2_sqrt(fp2_t *a)
     uint32_t f = fp_is_zero(&t0);
     fp_neg(&t1, &x0);
     fp_copy(&t0, &x1);
-    fp_select(&t0, &t0, &x0, f);
-    fp_select(&t1, &t1, &x1, f);
-
-    // Check if t0 is zero
-    uint32_t t0_is_zero = fp_is_zero(&t0);
-
-    // Check whether t0, t1 are odd
-    // Note: we encode to ensure canonical representation
-    uint8_t tmp_bytes[FP_ENCODED_BYTES];
-    fp_encode(tmp_bytes, &t0);
-    uint32_t t0_is_odd = -((uint32_t)tmp_bytes[0] & 1);
-    fp_encode(tmp_bytes, &t1);
-    uint32_t t1_is_odd = -((uint32_t)tmp_bytes[0] & 1);
-
-    // We negate the output if:
-    // t0 is odd, or
-    // t0 is zero and t1 is odd
-    uint32_t negate_output = t0_is_odd | (t0_is_zero & t1_is_odd);
-    fp_neg(&x0, &t0);
-    fp_select(&(a->re), &t0, &x0, negate_output);
-    fp_neg(&x0, &t1);
-    fp_select(&(a->im), &t1, &x0, negate_output);
+    fp_select(&a->re, &t0, &x0, f);
+    fp_select(&a->im, &t1, &x1, f);
 }
 
 uint32_t
@@ -325,4 +323,47 @@ fp2_cswap(fp2_t *a, fp2_t *b, uint32_t ctl)
 {
     fp_cswap(&(a->re), &(b->re), ctl);
     fp_cswap(&(a->im), &(b->im), ctl);
+}
+
+// Returns UINT32_MAX if a < b, 0 otherwise
+static inline uint32_t
+ct_lt_u8(uint8_t a, uint8_t b)
+{
+    uint32_t borrow_bit = (((uint32_t)a - (uint32_t)b) >> 8) & 1u;
+    return (uint32_t)(-(int32_t)borrow_bit);
+}
+
+// Returns UINT32_MAX if a == b, 0 otherwise
+static inline uint32_t
+ct_eq_u8(uint8_t a, uint8_t b)
+{
+    uint32_t x = (uint32_t)(a ^ b);
+    uint32_t nonzero = (x | (uint32_t)(-(int32_t)x)) >> 31;
+    return ~((uint32_t)(-(int32_t)nonzero));
+}
+
+// Returns UINT32_MAX if x1 < x2, 0 otherwise where x are represented as little endian integers of the form
+// encode(x.re) || encode(x.im) where the real and imaginary components themselves are encoded as little endian
+// integers.
+// In other words, x1 < x2 if im(x1) < im(x2) or im(x1) == im(x2) and re(x1) < re(x2)
+uint32_t
+fp2_less_than(const fp2_t *x1, const fp2_t *x2)
+{
+    uint8_t buf1[FP2_ENCODED_BYTES];
+    uint8_t buf2[FP2_ENCODED_BYTES];
+
+    fp2_encode(buf1, x1);
+    fp2_encode(buf2, x2);
+
+    uint32_t result = 0;
+    uint32_t all_equal_so_far = UINT32_MAX;
+
+    for (size_t idx = FP2_ENCODED_BYTES; idx-- > 0;) {
+        uint32_t less = ct_lt_u8(buf1[idx], buf2[idx]);
+        uint32_t equal = ct_eq_u8(buf1[idx], buf2[idx]);
+        result |= all_equal_so_far & less;
+        all_equal_so_far &= equal;
+    }
+
+    return result;
 }

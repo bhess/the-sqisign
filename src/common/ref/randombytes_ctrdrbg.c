@@ -30,14 +30,18 @@ property. The software developed by NIST employees is not subject to copyright
 protection within the United States.
 */
 
+/*
+Modified from the original by NIST: the DRBG state (DRBG_ctx) was made thread-local. Nothing else about the CTR-DRBG
+construction was changed, and the resulting stream should be identical.
+*/
+
 #include <rng.h>
 #include <string.h>
 
 #include <aes.h>
+#include <tutil.h>
 
-#ifdef ENABLE_CT_TESTING
-#include <valgrind/memcheck.h>
-#endif
+#include <ct_testing.h>
 
 #define RNG_SUCCESS 0
 #define RNG_BAD_MAXLEN -1
@@ -58,7 +62,7 @@ typedef struct {
 void AES256_CTR_DRBG_Update(const unsigned char *provided_data,
                             unsigned char *Key, unsigned char *V);
 
-AES256_CTR_DRBG_struct DRBG_ctx;
+SQISIGN_THREAD_LOCAL AES256_CTR_DRBG_struct DRBG_ctx;
 
 #ifndef CTRDRBG_TEST_BENCH
 static
@@ -144,10 +148,11 @@ void AES256_CTR_DRBG_Update(const unsigned char *provided_data,
 #ifdef RANDOMBYTES_C
 SQISIGN_API
 int randombytes(unsigned char *random_array, unsigned long long nbytes) {
+  // Prior buffer contents are irrelevant to the RNG; mark them defined so refilling a poisoned buffer (rejection
+  // sampling) does not trip definedness checks inside the RNG machinery
+  CT_TESTING_MAKE_PUBLIC(random_array, nbytes);
   int ret = randombytes_nist(random_array, nbytes);
-#ifdef ENABLE_CT_TESTING
-  VALGRIND_MAKE_MEM_UNDEFINED(random_array, ret);
-#endif
+  CT_TESTING_MAKE_SECRET(random_array, nbytes);
   return ret;
 }
 

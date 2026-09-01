@@ -19,12 +19,10 @@ fp2_random_test(fp2_t *a)
     fp_random_test(&(a->im));
 }
 
-// Given an x-coordinate, determines if this is a valid
-// point on the curve. Assumes C=1.
+// Given an x-coordinate, determines if this is a valid point on the curve. Assumes C=1.
 static uint32_t
 projective_is_on_curve(const ec_point_t *P, const ec_curve_t *curve)
 {
-
     fp2_t t0, t1, t2;
 
     // Check if xz*(C^2x^2+zACx+z^2C^2) is a square
@@ -88,8 +86,8 @@ projective_difference_point(ec_point_t *PQ, const ec_point_t *P, const ec_point_
     fp2_add(&t0, &t0, &t0);
     fp2_add(&Bxz, &Bxz, &t0); // C*(P.x*Q.x+P.z*Q.z)(P.x*Q.z+P.z*Q.x) + 2*A*P.x*Q.z*P.z*Q.x
 
-    // Normalization: our squareroot always has the same sign as long as P.z, Q.z, and C
-    // are in Fp and C is a square, so the B's should be scaled by C*C_bar^2*P.z_bar^2*Q.Z_bar^2
+    // Normalization: our squareroot always has the same sign as long as P.z, Q.z, and C are in Fp and C is a square, so
+    // the B's should be scaled by C*C_bar^2*P.z_bar^2*Q.Z_bar^2
     fp_copy(&t0.re, &curve->C.re);
     fp_neg(&t0.im, &curve->C.im);
     fp2_sqr(&t0, &t0);

@@ -116,6 +116,8 @@ void shake256_inc_finalize(shake256incctx *state);
 void shake256_inc_squeeze(uint8_t *output, size_t outlen, shake256incctx *state);
 /* Copy the state */
 void shake256_inc_ctx_clone(shake256incctx *dest, const shake256incctx *src);
+/* Reset the state for reuse */
+void shake256_inc_ctx_reset(shake256incctx *state);
 /* Free the state */
 void shake256_inc_ctx_release(shake256incctx *state);
 

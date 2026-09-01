@@ -25,18 +25,27 @@ test_sqisign(int repeat)
 
     printf("\n\nTesting signatures\n");
     for (int i = 0; i < repeat; ++i) {
-        printf("#%d \n", i);
+        printf("Key #%d \n", i);
 
-        protocols_keygen(&pk, &sk);
-        protocols_sign(&sig, &pk, &sk, msg, 32);
-        int check = protocols_verify(&sig, &pk, msg, 32);
-        if (!check) {
-            printf("verif failed ! \n");
+        if (!protocols_keygen(&pk, &sk)) {
+            printf("keygen failed ! \n");
+            res = 0;
+            continue;
+        }
+        for (int j = 0; j < repeat; j++) {
+            printf("  Sig #%d \n", j);
+            int check = protocols_sign(&sig, &pk, &sk, msg, 32);
+            if (!check) {
+                printf("sign failed ! \n");
+                res = 0;
+            }
+            check = protocols_verify(&sig, &pk, msg, 32);
+            if (!check) {
+                printf("verif failed ! \n");
+                res = 0;
+            }
         }
     }
-
-    public_key_finalize(&pk);
-    secret_key_finalize(&sk);
 
     return res;
 }

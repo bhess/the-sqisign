@@ -38,6 +38,35 @@ object IntBigTest {
       IntBigRes(exp0 == a || (p - exp0) == a, sqrt.modPow(2, p), in)
     }
     def ibz_sqrt_mod_2p(a: Array[BigInt]): IntBigRes = IntBigRes(a(0).modPow(2, 2 * a(2)) == a(1), a(0), a)
+
+    // mp module (src/mp/ref/generic/mp.c, instrumented with DEBUG_VERBOSE)
+    // MUL,out,a,b  =>  out is the exact double-wide product a*b
+    def MUL(a: Array[BigInt]) = IntBigRes(a(0) == a(1) * a(2), a(1) * a(2), a)
+    // mp_mul,c,a,b,bitwidth  =>  c == (a*b) mod 2^bitwidth (low limbs only)
+    // (also used for mp_mul64, whose bitwidth field is 64*nwords)
+    def mp_mul(a: Array[BigInt]): IntBigRes = {
+      val m = BigInt(2).pow(a(3).toInt)
+      IntBigRes(a(0) == (a(1) * a(2)).mod(m), (a(1) * a(2)).mod(m), a)
+    }
+    // mp_add64,c,a,b,bitwidth  =>  c == (a+b) mod 2^bitwidth
+    def mp_add64(a: Array[BigInt]): IntBigRes = {
+      val m = BigInt(2).pow(a(3).toInt)
+      IntBigRes(a(0) == (a(1) + a(2)).mod(m), (a(1) + a(2)).mod(m), a)
+    }
+    // mp_inv_2e,b,a,w  =>  (a*b) mod 2^w == 1
+    def mp_inv_2e(a: Array[BigInt]): IntBigRes = {
+      val m = BigInt(2).pow(a(2).toInt)
+      IntBigRes((a(0) * a(1)).mod(m) == 1, BigInt(1), a)
+    }
+    // mp_invert_matrix,inv(r1,r2,s1,s2),in(r1,r2,s1,s2),w  =>  M_in * M_inv == I mod 2^w
+    def mp_invert_matrix(a: Array[BigInt]): IntBigRes = {
+      val m = BigInt(2).pow(a(8).toInt)
+      val p11 = (a(4) * a(0) + a(5) * a(2)).mod(m)
+      val p12 = (a(4) * a(1) + a(5) * a(3)).mod(m)
+      val p21 = (a(6) * a(0) + a(7) * a(2)).mod(m)
+      val p22 = (a(6) * a(1) + a(7) * a(3)).mod(m)
+      IntBigRes(p11 == 1 && p12 == 0 && p21 == 0 && p22 == 1, p11, a)
+    }
   }
 
   val funList = Map(
@@ -53,7 +82,15 @@ object IntBigTest {
     "ibz_is_zero" -> IntBigTestFuns.ibz_is_zero _,
     "ibz_is_one" -> IntBigTestFuns.ibz_is_one _,
     "ibz_probab_prime" -> IntBigTestFuns.ibz_probab_prime _,
-    "ibz_gcd" -> IntBigTestFuns.ibz_gcd _
+    "ibz_gcd" -> IntBigTestFuns.ibz_gcd _,
+    "MUL" -> IntBigTestFuns.MUL _,
+    "mp_mul" -> IntBigTestFuns.mp_mul _,
+    "mp_inv_2e" -> IntBigTestFuns.mp_inv_2e _,
+    "mp_invert_matrix" -> IntBigTestFuns.mp_invert_matrix _,
+    // fixed-64-bit-limb routines (same checks; MUL64/mp_mul64 reuse MUL/mp_mul)
+    "MUL64" -> IntBigTestFuns.MUL _,
+    "mp_mul64" -> IntBigTestFuns.mp_mul _,
+    "mp_add64" -> IntBigTestFuns.mp_add64 _
   )
 
   case class AggregateResults(funName: String, errors: Int, ok: Int, max: Option[Int], min: Option[Int]) {

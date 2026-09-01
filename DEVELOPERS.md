@@ -56,20 +56,19 @@ where:
 
 Header files in the `include` directory above can be included by other modules
 and must contain extensive doxygen-formatted documentation describing the
-functions declared there; see [Documentation](#Documentation). Any
+functions declared there; see Documentation. Any
 implementation-type directory above is allowed to be a symlink; e.g., if a
 module has no separate optimized and reference implementation, then
 `opt` can be a symlink to `ref`.
 
 Similar to a module, each implementation type is comprised of implementation 
 *variants* and common code. A variant refers to either a *generic*
-implementation, an implementation whose parameters are defined by one of the
-NIST levels (i.e., 1, 3 or 5) or a variation of the latter. An implementation
+implementation or a parameter-dependent implementation. An implementation
 type must contain at least one variant. Each variant must be in its own
 directory within that of the implementation type. The generic variant must be
-placed in the `generic` directory and variants corresponding to NIST levels 1,
-3 and 5 are placed in the directories `lvl1`, `lvl3` and `lvl5`, respectively;
-there is no rule for naming the directory of a NIST variation, but
+placed in the `generic` directory and variants corresponding to our selected
+parameter choices are placed in directories `p324_3`, `p500_27` and `p664_17`,
+respectively; there is no rule for naming the directory of a NIST variation, but
 implementors are encouraged to choose informative namings. Common code refers to
 optional variant-independent code that is shared among all variants of the same
 implementation type. Common code is placed in special directories within that of
@@ -84,28 +83,25 @@ src
     ├── opt
     │   ├── include
     │   ├── lvlx
-    │   ├── lvl1
-    │   ├── lvl1_var1
-    │   ├── lvl3
-    │   └── lvl5
+    │   ├── p324_3
+    │   ├── p500_27
+    │   ├── p664_17
     ├── ref
     │   ├── generic
-    │   └── lvl1
+    │   └── p324_3
     └── <arch>
         ├── include
         ├── lvlx
-        ├── lvl3
-        └── lvl5
+        ├── p500_27
+        └── p664_17
 ```
 where:
-- `lvl1`, `lvl3`, `lvl5` are implementations of NIST levels 1, 3 and 5,
-  respectively, for the corresponding implementation type.
-- `lvl1_var1` is a variation of `lvl1` for the `opt` implementation type (e.g.,
-  using a different prime characteristic).
+- `p324_3`, `p500_27`, `p664_17` are implementations of our selected
+  parameters, for the corresponding implementation type.
 - `opt/include` contains header files common to all variants in the `opt`
-  implementation type (i.e., `lvl1`, `lvl1_var1`, `lvl3` and `lvl5`).
+  implementation type (i.e., `p324_3`, `p500_27` and `p664_17`).
   Similarly, `<arch>/include` for all variants in the `<arch>` implementation
-  type (i.e., `lvl3` and `lvl5`).
+  type (i.e., `p500_27` and `p664_17`).
 - `opt/lvlx` contains source files common to all variants in the `opt`
   implementation type. Similarly, `<arch>/lvlx` for all variants in the `<arch>`
   implementation type.
@@ -128,14 +124,14 @@ Each implementation variant must be organized as follows:
 - Source files of the implementation and their private internal header files are
   placed directly in the implementation variant directory.
 - Source files of unit tests and their private internal header files are placed
-  in the `test` directory. Refer to [Tests](#Tests) for instructions on how to
+  in the `test` directory. Refer to Tests for instructions on how to
   write these.
 
 Common code (in `lvlx`) for all variants in an implementation type follows the
 same organization as above, with the exception that `lvlx` never contains an
 `include` directory. This role is taken by the `include` directory in the
 implementation type. Below is an example with the detailed organization of the
-common code and the `lvl1` variant for the `ref` implementation type of a
+common code and the `p324_3` variant for the `ref` implementation type of a
 module:
 ```
 <module_name>
@@ -151,19 +147,19 @@ module:
 │  │  ├── internal_header_ref.h
 │  │  ├── source1_ref.c
 │  │  └── source2_ref.c
-│  ├──lvl1
+│  ├──p324_3
 │  │  ├── include
-│  │  │   └── header_ref_lvl1.h
+│  │  │   └── header_ref_p324_3.h
 │  │  ├── test
-│  │  │   ├── test_internal_header_ref_lvl1.h
+│  │  │   ├── test_internal_header_ref_p324_3.h
 │  │  │   │   ...
-│  │  │   ├── test1_ref_lvl1.c
-│  │  │   └── test2_ref_lvl1.c
-│  │  ├── internal_header_ref_lvl1.h
-│  │  ├── source1_ref_lvl1.c
-│  │  └── source2_ref_lvl1.c
-│  ├──lvl3
-│  └──lvl5
+│  │  │   ├── test1_ref_p324_3.c
+│  │  │   └── test2_ref_p324_3.c
+│  │  ├── internal_header_ref_p324_3.h
+│  │  ├── source1_ref_p324_3.c
+│  │  └── source2_ref_p324_3.c
+│  ├──p500_27
+│  └──p664_17
 ```
 
 Finally, common code for a module must be organized as follows:
@@ -173,7 +169,7 @@ Finally, common code for a module must be organized as follows:
 - Source files and their private internal header files are placed in the 
   `<module_name>x` directory.
 - Source files of unit tests and their private internal header files are placed
-  in the `<module_name>x/test` directory. Again, refer to [Tests](#Tests) for
+  in the `<module_name>x/test` directory. Again, refer to Tests for
   instructions on how to write these.
 
 The example below shows the detailed organization of the common code of a
@@ -204,9 +200,26 @@ to ensure consistency across the modules.
 ### Unit tests
 
 These go in the `src/<module_name>/<module_name>x/test` and 
-`src/<module_name>/<ref|opt|...>/<generic|lvlx|lvl1|...>/test/` directories.
-Refer to [`src/gf/gfx/test/test_fp.c`](src/gf/gfx/test/test_fp.c) for an example
-of how to write tests.
+`src/<module_name>/<ref|opt|...>/<generic|lvlx|p324_3|...>/test/`
+directories.
+Refer to [`src/gf/gfx/test/test_fp.c`](src/gf/gfx/test/test_fp.c) for an
+example of how to write tests.
+
+#### Randomness in tests
+
+A test that consumes randomness must be reproducible from the seed it reports,
+so that an intermittent failure can be replayed. Adhering to the following
+guidelines should ensure that reproducibility is achieved:
+
+- Tests should use `parse_seed()` and `print_seed()` from
+[`bench_test_arguments.h`](src/common/generic/include/bench_test_arguments.h),
+falling back to `randombytes_select()` when no `--seed=` was given.
+- Link against `sqisign_common_test` instead of `sqisign_common_sys` to use
+the deterministic AES-CTR-DRBG-based implementation of `randombytes`.
+- Pass this (fixed or randomly drawn) seed to `init_test_rng()`, which
+seeds both AES-CTR-DRBG and SHAKE-based PRNGs.
+- Use either `randombytes` (deprecated) or the SHAKE PRNG (in new code) to
+generate randomness.
 
 ### Integration tests
 
@@ -280,21 +293,128 @@ pull-request and ask for at least one review.
 
 - **Formatting**: This project uses
   [`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) to
-  format the code.  From the root of the project run the following
-  command:
-  
+  format the code, with the style defined in
+  [`.clang-format`](.clang-format).  CI rejects incorrectly formatted
+  code, so please install the [pre-commit](https://pre-commit.com/)
+  hook once per clone:
+
   ```
-  find ./src -path ./src/precomp -prune -type f -o -iname '*.h' -o -iname '*.c' | xargs clang-format -i 
+  pre-commit install --install-hooks
   ```
-  
-  to automatically format all appropriate files with `clang-format`.
-  
-  If you want, you can install a [pre-commit
-  hook](https://pre-commit.com/) to ensure that your work is correctly
-  formatted before pushing
-  
+
+  From then on `git commit` formats the files you staged, and refuses
+  the commit if it had to change anything — stage the fixes with `git
+  add -u` and commit again.  This also means you do **not** need to
+  install `clang-format` yourself: `pre-commit` fetches the right
+  version for you, and the targets below reuse it from its cache.
+
+  To format the whole tree by hand instead, use either of
+
   ```
-  pre-commit install
+  make format          # from inside your build directory
+  scripts/format.sh    # from anywhere in the checkout
   ```
-  
-  Will use the `.pre-commit-config.yaml` file.
+
+  and `make check-format` / `scripts/format.sh --check` to report
+  problems without changing anything.
+
+  The clang-format version is pinned (currently 18.1.6), because
+  different releases format the same code differently.  Vendored and
+  generated code is excluded from formatting.  See
+  FORMATTING.md for installation options, the full
+  exclusion list, and further details.
+
+## Static analysis
+
+Two static analyzers run daily over the project, `cppcheck` and
+`clang-tidy`. Both are driven by a script that CI and a developer
+machine run identically, both analyze once per `SQISIGN_BUILD_TYPE`,
+and both use the same rule for false positives: suppress at the site,
+and say why.
+
+### cppcheck
+
+To run the same check locally:
+
+```
+scripts/cppcheck.sh
+```
+
+or `make cppcheck` from inside a build directory. It takes a few
+seconds and needs only a CMake configure, not a build. The comments at
+the top of `scripts/cppcheck.sh` list its options and explain every flag
+it passes. The generated and vendored code it skips is listed once, in
+`scripts/quality_checks_exclusions.sh`, which `clang-tidy` and the
+coverage script read too.
+
+The check runs once per `SQISIGN_BUILD_TYPE`, because the build type
+selects which directories are compiled and no single configuration
+covers the whole tree. A consequence: a finding in `src/gf/sat64`
+cannot be reproduced from a `ref` build, and vice versa. If CI reports
+something you cannot reproduce, pass the `--config=` it came from.
+
+Fix findings. If one is genuinely a false positive, suppress it at
+the site and say why — the reason is not optional, since a suppression
+without one is indistinguishable from hiding a bug:
+
+```c
+// cppcheck-suppress <id> ; <why this is not a defect>
+```
+
+One false positive worth recognizing: `shiftTooManyBitsSigned` on a
+*right* shift of a signed value is wrong — C11 6.5.7p5 makes that
+implementation-defined, not undefined — which is why the sign-broadcast
+idiom in `src/gf/sat64` is suppressed. On a *left* shift the same check
+reports a genuine defect, so read the operator before dismissing it.
+
+### clang-tidy
+
+```
+scripts/clang-tidy.sh
+```
+
+or `make clang-tidy` from inside a build directory; `--fix` applies the
+automatic fixes. Takes a few minutes, since it analyzes each source
+once per security level — the level sets `NWORDS_FIELD` and that is
+what the bounds checker reasons about.
+
+The check list is in `.clang-tidy` at the repository root, so clangd
+shows the same findings in your editor. Each disabled check carries
+its reason and measured finding count.
+
+The analysis runs with `-UNDEBUG` even though it configures a Release
+build, because the analyzer uses `assert()` as a path constraint. An
+assert is therefore often the right answer to a bounds finding you know
+to be impossible.
+
+```c
+// NOLINTNEXTLINE(<check>) - <why this is not a defect>
+```
+
+For array bounds name both `clang-analyzer-security.ArrayBound` and
+`clang-analyzer-alpha.security.ArrayBoundV2`: LLVM 20 renamed the
+checker. Note that findings differ between the two.
+
+## Code coverage
+
+```
+scripts/coverage.sh
+```
+
+or `make coverage` from inside a build directory. Add `--open`
+(`make coverage-open`) to open the report when it finishes. The script
+builds its own `-O0` tree in
+`build-coverage-<config>/`, runs `ctest` there, and writes
+`coverage.html` next to it. Your own build directory is left alone.
+
+Coverage is a measurement, not a gate — nothing fails on a low number.
+Use it to find code the tests never reach, then write tests for it.
+`--fail-under=N` exists for a local check but CI does not pass it.
+
+CI runs it nightly, `ref` and `broadwell`, on the x64 runner. The
+numbers appear on the workflow run page; the HTML report is under
+Artifacts.
+
+Not in the report: generated and vendored code, and test and benchmark
+sources. Both lists live in `scripts/quality_checks_exclusions.sh`; the
+static analyzers use the first one only.

@@ -59,7 +59,7 @@ fp_test(int iterations)
     passed = 1;
     for (n = 0; n < iterations; n++) {
         fp_random_test(&a);
-        uint32_t val = rand();
+        uint32_t val = u32_random_test();
 
         // Multiply by small value
         fp_mul_small(&b, &a, val);

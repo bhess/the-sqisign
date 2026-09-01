@@ -179,7 +179,7 @@ fp2_test(int iterations)
     passed = 1;
     for (n = 0; n < iterations; n++) {
         fp2_random_test(&a);
-        uint32_t val = rand();
+        uint32_t val = u32_random_test();
 
         // Multiply by a small value
         fp2_mul_small(&b, &a, val);

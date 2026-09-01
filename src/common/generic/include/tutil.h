@@ -11,21 +11,45 @@
 #define UNUSED __attribute__((unused))
 #else
 #define BSWAP16(i) ((((i) >> 8) & 0xff) | (((i) & 0xff00) << 8))
-#define BSWAP32(i)                                                                                 \
-    ((((i) >> 24) & 0xff) | (((i) >> 8) & 0xff00) | (((i) & 0xff00) << 8) | ((i) << 24))
-#define BSWAP64(i) ((BSWAP32((i) >> 32) & 0xffffffff) | (BSWAP32(i) << 32)
+#define BSWAP32(i) ((((i) >> 24) & 0xff) | (((i) >> 8) & 0xff00) | (((i) & 0xff00) << 8) | ((i) << 24))
+#define BSWAP64(i) ((BSWAP32((i) >> 32) & 0xffffffff) | (BSWAP32(i) << 32))
 #define UNUSED
 #endif
 
+// Thread-storage-duration qualifier for state that must not be shared between concurrent operations.
+//
+// Define SQISIGN_SINGLE_THREADED to compile it away: the C11 thread-local machinery is too expensive on embedded
+// targets, which are usually single-threaded anyway. Opt-out: if not defined, it is multithreaded-safe.
+#if defined(SQISIGN_SINGLE_THREADED)
+#define SQISIGN_THREAD_LOCAL
+#elif defined(_MSC_VER)
+#define SQISIGN_THREAD_LOCAL __declspec(thread)
+#else
+#define SQISIGN_THREAD_LOCAL _Thread_local
+#endif
+
+// fallback when the build system sets no radix: 64-bit limbs need a 128-bit type
+#if !defined(RADIX_32) && !defined(RADIX_64)
+#if defined(__SIZEOF_INT128__)
+#define RADIX_64
+#else
+#define RADIX_32
+#endif
+#endif
+
 #if defined(RADIX_64)
-#define digit_t uint64_t
-#define sdigit_t int64_t
+typedef uint64_t digit_t;
+typedef int64_t sdigit_t;
+__extension__ typedef __uint128_t ddigit_t;
+__extension__ typedef __int128_t sddigit_t;
 #define RADIX 64
 #define LOG2RADIX 6
 #define BSWAP_DIGIT(i) BSWAP64(i)
 #elif defined(RADIX_32)
-#define digit_t uint32_t
-#define sdigit_t int32_t
+typedef uint32_t digit_t;
+typedef int32_t sdigit_t;
+typedef uint64_t ddigit_t;
+typedef int64_t sddigit_t;
 #define RADIX 32
 #define LOG2RADIX 5
 #define BSWAP_DIGIT(i) BSWAP32(i)

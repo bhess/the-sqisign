@@ -5,4 +5,5 @@ endif()
 get_filename_component(CCSD_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(TOUPPER ${CCSD_NAME} CCSD_NAME_UPPER)
 include(${SELECT_SQISIGN_VARIANT})
-include(${SELECT_IMPL_TYPE})
+
+add_subdirectory(ref)

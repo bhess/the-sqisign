@@ -48,7 +48,8 @@ main(int argc, char *argv[])
     }
 #endif
 
-    randombytes_init((unsigned char *)seed, NULL, 256);
+    if (init_test_rng(seed) != 0)
+        return 1;
 
     printf("Running id2iso module unit tests\n");
 
@@ -56,17 +57,7 @@ main(int argc, char *argv[])
 
     printf("\nRunning dim2id2iso module unit tests\n");
 
-    printf("\nRunning find uv tests \n");
-    int number_test_find_uv = 5;
-    for (int i = 0; i < number_test_find_uv; i++) {
-        res = res & dim2id2iso_test_find_uv();
-    }
-
-    printf("\nRunning fixed degree tests\n");
-
-    res = res & dim2id2iso_test_fixed_degree_isogeny();
-
-    printf("\nRunning id2iso_clapotis tests\n");
+    printf("\nRunning id2iso_qlapoty tests\n");
     res = res & dim2id2iso_test_dimid2iso();
 
     if (!res) {

@@ -1,7 +1,10 @@
 set(SOURCE_FILES_HD_GENERIC_REF
     ${LVLX_DIR}/hd.c
     ${LVLX_DIR}/theta_structure.c 
+    ${LVLX_DIR}/gluing.c 
+    ${LVLX_DIR}/splitting.c 
     ${LVLX_DIR}/theta_isogenies.c 
+
 )
 
 add_library(${LIB_HD_${SVARIANT_UPPER}} STATIC ${SOURCE_FILES_HD_GENERIC_REF})

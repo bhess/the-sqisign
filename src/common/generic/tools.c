@@ -20,6 +20,7 @@ tac(void)
 float
 TAC(const char *str)
 {
+    (void)str;
     float ms = (1000. * (float)(clock() - global_timer) / CLOCKS_PER_SEC);
 #ifndef NDEBUG
     printf("%s [%d ms]\n", str, (int)ms);

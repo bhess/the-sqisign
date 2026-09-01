@@ -238,24 +238,21 @@ def basis2field(P, Q):
     return vs
 
 ################################################################
+(A,A24),basis,(mati,matj,matk),(mat2,mat3,mat4) = data[0]
 
 objs = ObjectFormatter([
-        Object('curve_with_endomorphism_ring_t[]', 'CURVES_WITH_ENDOMORPHISMS',
-            [
+        Object('curve_with_endomorphism_ring_t', 'CURVE_WITH_ENDOMORPHISMS',
                 [
                     [Fp2_to_list(A), Fp2_to_list(1),                    # ec_curve_t A, C
                      [Fp2_to_list(A24), Fp2_to_list(1)], "true"],       # ec_curve_t A24, is_A24_computed_and_normalized
                     basis2field(*basis),                                # ec_basis_t
-                    [[Ibz(v) for v in vs] for vs in mati.transpose()],  # ibz_mat_2x2_t
-                    [[Ibz(v) for v in vs] for vs in matj.transpose()],  # ibz_mat_2x2_t
-                    [[Ibz(v) for v in vs] for vs in matk.transpose()],  # ibz_mat_2x2_t
-                    [[Ibz(v) for v in vs] for vs in mat2.transpose()],  # ibz_mat_2x2_t
-                    [[Ibz(v) for v in vs] for vs in mat3.transpose()],  # ibz_mat_2x2_t
-                    [[Ibz(v) for v in vs] for vs in mat4.transpose()],  # ibz_mat_2x2_t
-                ]
-                for (A,A24),basis,(mati,matj,matk),(mat2,mat3,mat4)
-                in data
-            ])
+                    [[[Ibz(v) for v in vs] for vs in mati.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                    [[[Ibz(v) for v in vs] for vs in matj.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                    [[[Ibz(v) for v in vs] for vs in matk.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                    [[[Ibz(v) for v in vs] for vs in mat2.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                    [[[Ibz(v) for v in vs] for vs in mat3.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                    [[[Ibz(v) for v in vs] for vs in mat4.transpose()]], # ibz_mat_2x2_t (struct-wrapped)
+                ])
     ])
 
 with open('include/endomorphism_action.h','w') as hfile:
@@ -286,16 +283,14 @@ typedef struct curve_with_endomorphism_ring {
 } curve_with_endomorphism_ring_t;
               '''.strip(), file=hfile)
 
-        print(f'#define CURVE_E0 (CURVES_WITH_ENDOMORPHISMS->curve)', file=hfile)
-        print(f'#define BASIS_EVEN (CURVES_WITH_ENDOMORPHISMS->basis_even)', file=hfile)
-        print(f'#define ACTION_I (CURVES_WITH_ENDOMORPHISMS->action_i)', file=hfile)
-        print(f'#define ACTION_J (CURVES_WITH_ENDOMORPHISMS->action_j)', file=hfile)
-        print(f'#define ACTION_K (CURVES_WITH_ENDOMORPHISMS->action_k)', file=hfile)
-        print(f'#define ACTION_GEN2 (CURVES_WITH_ENDOMORPHISMS->action_gen2)', file=hfile)
-        print(f'#define ACTION_GEN3 (CURVES_WITH_ENDOMORPHISMS->action_gen3)', file=hfile)
-        print(f'#define ACTION_GEN4 (CURVES_WITH_ENDOMORPHISMS->action_gen4)', file=hfile)
-        print(f'#define NUM_ALTERNATE_STARTING_CURVES {len(data)-1}', file=hfile)
-        print(f'#define ALTERNATE_STARTING_CURVES (CURVES_WITH_ENDOMORPHISMS+1)', file=hfile)
+        print(f'#define CURVE_E0 (CURVE_WITH_ENDOMORPHISMS.curve)', file=hfile)
+        print(f'#define BASIS_EVEN (CURVE_WITH_ENDOMORPHISMS.basis_even)', file=hfile)
+        print(f'#define ACTION_I (CURVE_WITH_ENDOMORPHISMS.action_i)', file=hfile)
+        print(f'#define ACTION_J (CURVE_WITH_ENDOMORPHISMS.action_j)', file=hfile)
+        print(f'#define ACTION_K (CURVE_WITH_ENDOMORPHISMS.action_k)', file=hfile)
+        print(f'#define ACTION_GEN2 (CURVE_WITH_ENDOMORPHISMS.action_gen2)', file=hfile)
+        print(f'#define ACTION_GEN3 (CURVE_WITH_ENDOMORPHISMS.action_gen3)', file=hfile)
+        print(f'#define ACTION_GEN4 (CURVE_WITH_ENDOMORPHISMS.action_gen4)', file=hfile)
 
         objs.header(file=hfile)
         objs.implementation(file=cfile)

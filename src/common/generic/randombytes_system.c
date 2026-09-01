@@ -22,9 +22,7 @@ THE SOFTWARE.
 
 #include <rng.h>
 
-#ifdef ENABLE_CT_TESTING
-#include <valgrind/memcheck.h>
-#endif
+#include <ct_testing.h>
 
 // In the case that are compiling on linux, we need to define _GNU_SOURCE
 // *before* randombytes.h is included. Otherwise SYS_getrandom will not be
@@ -64,12 +62,15 @@ THE SOFTWARE.
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
+// Under CT testing, prefer the raw SYS_getrandom syscall over the glibc wrapper: glibc >= 2.40 implements
+// getrandom() via a vDSO fast path with an opaque per-thread state that valgrind does not model precisely,
+// producing spurious definedness reports when a previously poisoned buffer is refilled
 #if (defined(__linux__) || defined(__GNU__)) && defined(__GLIBC__) &&                              \
-    ((__GLIBC__ > 2) || (__GLIBC_MINOR__ > 24))
+    ((__GLIBC__ > 2) || (__GLIBC_MINOR__ > 24)) && !defined(ENABLE_CT_TESTING)
 #define USE_GLIBC
 #include <sys/random.h>
 #endif /* (defined(__linux__) || defined(__GNU__)) && defined(__GLIBC__) && ((__GLIBC__ > 2) ||    \
-          (__GLIBC_MINOR__ > 24)) */
+          (__GLIBC_MINOR__ > 24)) && !defined(ENABLE_CT_TESTING) */
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -410,11 +411,11 @@ SQISIGN_API
 int
 randombytes(unsigned char *x, unsigned long long xlen)
 {
-
+    // Prior buffer contents are irrelevant to the RNG; mark them defined so refilling a poisoned buffer (rejection
+    // sampling) does not trip definedness checks inside the RNG machinery
+    CT_TESTING_MAKE_PUBLIC(x, xlen);
     int ret = randombytes_select(x, (size_t)xlen);
-#ifdef ENABLE_CT_TESTING
-    VALGRIND_MAKE_MEM_UNDEFINED(x, xlen);
-#endif
+    CT_TESTING_MAKE_SECRET(x, xlen);
     return ret;
 }
 

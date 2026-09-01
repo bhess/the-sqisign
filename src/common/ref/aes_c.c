@@ -744,16 +744,19 @@ aes256_ctr(unsigned char *out, size_t outlen, const unsigned char *iv, const aes
 void
 aes128_ctx_release(aes128ctx *r)
 {
+    (void)r;
 }
 
 void
 aes192_ctx_release(aes192ctx *r)
 {
+    (void)r;
 }
 
 void
 aes256_ctx_release(aes256ctx *r)
 {
+    (void)r;
 }
 
 int
@@ -762,6 +765,7 @@ AES_128_CTR(unsigned char *output,
             const unsigned char *input,
             size_t inputByteLen)
 {
+    (void)inputByteLen;
     aes128ctx ctx;
     const unsigned char iv[16] = { 0 };
 

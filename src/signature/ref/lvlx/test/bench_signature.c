@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <locale.h>
 #include <time.h>
@@ -42,7 +43,10 @@ bench_sqisign(uint64_t bench)
     t = tic();
     t0 = rdtsc();
     for (uint64_t i = 0; i < bench; ++i) {
-        protocols_keygen(&pks[i], &sks[i]);
+        if (!protocols_keygen(&pks[i], &sks[i])) {
+            printf("keygen failed\n");
+            abort();
+        }
     }
     t1 = rdtsc();
     ms = (1000. * (float)(clock() - t) / CLOCKS_PER_SEC);
@@ -71,11 +75,6 @@ bench_sqisign(uint64_t bench)
     ms = (1000. * (float)(clock() - t) / CLOCKS_PER_SEC);
     printf("Average verification time [%.2f ms]\n", (float)(ms / bench));
     printf("\x1b[34mAvg verification: %'" PRIu64 " cycles\x1b[0m\n", (t1 - t0) / bench);
-
-    for (uint64_t i = 0; i < bench; i++) {
-        public_key_finalize(&pks[i]);
-        secret_key_finalize(&sks[i]);
-    }
 }
 
 // run all tests in module
@@ -136,5 +135,5 @@ main(int argc, char *argv[])
 
     bench_sqisign(iterations);
 
-    return (0);
+    return 0;
 }

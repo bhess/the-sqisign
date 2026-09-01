@@ -1,6 +1,5 @@
 /*
- * A custom SHA-3 / SHAKE implementation is used for pseudorandom (but
- * reproducible) generation of test values.
+ * A custom SHA-3 / SHAKE implementation is used for pseudorandom (but reproducible) generation of test values.
  */
 
 #include "test_utils.h"
@@ -22,6 +21,16 @@ fp2_random_test(fp2_t *a)
 {
     fp_random_test(&(a->re));
     fp_random_test(&(a->im));
+}
+
+uint32_t
+u32_random_test(void)
+{
+    uint32_t v;
+
+    randombytes((unsigned char *)&v, sizeof(v));
+
+    return v & 0x7fffffffu;
 }
 
 int

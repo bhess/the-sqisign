@@ -27,10 +27,14 @@ object Namespace extends App {
 #define PARAM_JOIN2(a, b) PARAM_JOIN2_(a, b)
 #define PARAM_NAME2(end, s) PARAM_JOIN2(end, s)
 
-#ifndef DISABLE_NAMESPACING
-#define SQISIGN_NAMESPACE_GENERIC(s) PARAM_NAME2(gen, s)
-#else
+#ifdef DISABLE_NAMESPACING
 #define SQISIGN_NAMESPACE_GENERIC(s) s
+#elif defined(SQISIGN_NAMESPACE_GENERIC_AS_VARIANT)
+// One binary can carry several parameter sets; generic symbols are
+// level-dependent (bounded ibz sizes), so they need the variant prefix too.
+#define SQISIGN_NAMESPACE_GENERIC(s) SQISIGN_NAMESPACE(s)
+#else
+#define SQISIGN_NAMESPACE_GENERIC(s) PARAM_NAME2(gen, s)
 #endif
 
 #if defined(SQISIGN_VARIANT) && !defined(DISABLE_NAMESPACING)
@@ -40,8 +44,8 @@ object Namespace extends App {
 #define SQISIGN_NAMESPACE(s) PARAM_NAME3(opt, s)
 #elif defined(SQISIGN_BUILD_TYPE_BROADWELL)
 #define SQISIGN_NAMESPACE(s) PARAM_NAME3(broadwell, s)
-#elif defined(SQISIGN_BUILD_TYPE_ARM64CRYPTO)
-#define SQISIGN_NAMESPACE(s) PARAM_NAME3(arm64crypto, s)
+#elif defined(SQISIGN_BUILD_TYPE_ARM64)
+#define SQISIGN_NAMESPACE(s) PARAM_NAME3(arm64, s)
 #else
 #error "Build type not known"
 #endif
@@ -82,11 +86,8 @@ object Namespace extends App {
     "tools.c",
     "randombytes_system.c",
     "randombytes_ctrdrbg.c",
-    "randombytes_ctrdrbg_aesni.c",
     "foo.c",
-    "aes_c.c",
-    "aes_ni.c",
-    "ctr_drbg.c"    
+    "aes_c.c"
   )
 
   val genericFiles = List(
@@ -102,16 +103,18 @@ object Namespace extends App {
     "finit.c",
     "printer.c",
     "rationals.c",
-    "l2.c",
     "lll_verification.c",
     "lll_applications.c",
     "rationals.c",
-    "normeq.c",
+    "stdorder.c",
     "ibz_division.c",
     "hnf_internal.c",
     "hnf.c",
+    "qlapoty.c",
     "random_input_generation.c",
     "mem.c",
+    "prng.c",
+    "protocol.c",
     // mp module
     "mp.c"
   ).map(i => s"$i.o:")

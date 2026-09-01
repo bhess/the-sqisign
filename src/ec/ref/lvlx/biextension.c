@@ -3,14 +3,15 @@
 #include <inttypes.h>
 #include <mp.h>
 
+#include <ct_testing.h>
+
 /*
- * We implement the biextension arithmetic by using the cubical torsor
- * representation. For now only implement the 2^e-ladder.
+ * We implement the biextension arithmetic by using the cubical torsor representation. For now only implement the
+ * 2^e-ladder.
  *
- * Warning: cubicalADD is off by a factor x4 with respect to the correct
- * cubical arithmetic. This does not affect the Weil pairing or the Tate
- * pairing over F_{p^2} (due to the final exponentiation), but would give
- * the wrong result if we compute the Tate pairing over F_p.
+ * Warning: cubicalADD is off by a factor x4 with respect to the correct cubical arithmetic. This does not affect the
+ * Weil pairing or the Tate pairing over F_{p^2} (due to the final exponentiation), but would give the wrong result if
+ * we compute the Tate pairing over F_p.
  */
 
 // this would be exactly like xADD if PQ was 'antinormalised' as (1,z)
@@ -36,8 +37,7 @@ cubicalADD(ec_point_t *R, const ec_point_t *P, const ec_point_t *Q, const fp2_t 
     fp2_mul(&R->x, ixPQ, &t2);
 }
 
-// Given cubical reps of P, Q and x(P - Q) = (1 : ixPQ)
-// compute P + Q, [2]Q
+// Given cubical reps of P, Q and x(P - Q) = (1 : ixPQ) compute P + Q, [2]Q
 // Cost: 6M + 4S + 4a + 4s
 static void
 cubicalDBLADD(ec_point_t *PpQ,
@@ -82,8 +82,8 @@ biext_ladder_2e(uint32_t e,
                 const fp2_t *ixP,
                 const ec_point_t *A24)
 {
-    copy_point(PnQ, PQ);
-    copy_point(nQ, Q);
+    ec_copy_point(PnQ, PQ);
+    ec_copy_point(nQ, Q);
     for (uint32_t i = 0; i < e; i++) {
         cubicalDBLADD(PnQ, nQ, PnQ, nQ, ixP, A24);
     }
@@ -110,8 +110,7 @@ translate(ec_point_t *P, const ec_point_t *T)
     // T = (A : 0) then the translation of P should be P
     // T = (0 : B) then the translation of P = (X : Z) should be (Z : X)
     // Otherwise T = (A : B) and P translates to (AX - BZ : BX - AZ)
-    // We compute this in constant time by computing the generic case
-    // and then using constant time swaps.
+    // We compute this in constant time by computing the generic case and then using constant time swaps.
     fp2_t PX_new, PZ_new;
 
     {
@@ -145,28 +144,25 @@ translate(ec_point_t *P, const ec_point_t *T)
 
 // Compute the biextension monodromy g_P,Q^{2^g} (in level 1) via the
 // cubical arithmetic of P+2^e Q.
-// The suffix _i means that we are given 1/x(P) as parameter. Warning: to
-// get meaningful result when using the monodromy to compute pairings, we
-// need P, Q, PQ, A24 to be normalised (this is not strictly necessary, but
-// care need to be taken when they are not normalised. Only handle the
-// normalised case for now)
+// The suffix _i means that we are given 1/x(P) as parameter. Warning: to get meaningful result when using the monodromy
+// to compute pairings, we need P, Q, PQ, A24 to be normalised (this is not strictly necessary, but care need to be
+// taken when they are not normalised. Only handle the normalised case for now)
 static void
 monodromy_i(ec_point_t *R, const pairing_params_t *pairing_data, bool swap_PQ)
 {
     fp2_t ixP;
     ec_point_t P, Q, PnQ, nQ;
 
-    // When we compute the Weil pairing we need both P + [2^e]Q and
-    // Q + [2^e]P which we can do easily with biext_ladder_2e() below
-    // we use a bool to decide wether to use Q, ixP or P, ixQ in the
-    // ladder and P or Q in translation.
+    // When we compute the Weil pairing we need both P + [2^e]Q and Q + [2^e]P which we can do easily with
+    // biext_ladder_2e() below we use a bool to decide wether to use Q, ixP or P, ixQ in the ladder and P or Q in
+    // translation.
     if (!swap_PQ) {
-        copy_point(&P, &pairing_data->P);
-        copy_point(&Q, &pairing_data->Q);
+        ec_copy_point(&P, &pairing_data->P);
+        ec_copy_point(&Q, &pairing_data->Q);
         fp2_copy(&ixP, &pairing_data->ixP);
     } else {
-        copy_point(&P, &pairing_data->Q);
-        copy_point(&Q, &pairing_data->P);
+        ec_copy_point(&P, &pairing_data->Q);
+        ec_copy_point(&Q, &pairing_data->P);
         fp2_copy(&ixP, &pairing_data->ixQ);
     }
 
@@ -199,77 +195,24 @@ cubical_normalization(pairing_params_t *pairing_data, const ec_point_t *P, const
     fp2_set_one(&pairing_data->Q.z);
 }
 
-// Weil pairing, PQ should be P+Q in (X:Z) coordinates
-// We assume the points are normalised correctly
-static void
-weil_n(fp2_t *r, const pairing_params_t *pairing_data)
-{
-    ec_point_t R0, R1;
-    monodromy_i(&R0, pairing_data, true);
-    monodromy_i(&R1, pairing_data, false);
-
-    fp2_mul(r, &R0.x, &R1.z);
-    fp2_inv(r);
-    fp2_mul(r, r, &R0.z);
-    fp2_mul(r, r, &R1.x);
-}
-
-// Weil pairing, PQ should be P+Q in (X:Z) coordinates
-// Normalise the points and call the code above
-// The code will crash (division by 0) if either P or Q is (0:1)
-void
-weil(fp2_t *r, uint32_t e, const ec_point_t *P, const ec_point_t *Q, const ec_point_t *PQ, ec_curve_t *E)
-{
-    pairing_params_t pairing_data;
-    // Construct the structure for the Weil pairing
-    // Set (PX/PZ : 1), (QX : QZ : 1), PZ/PX and QZ/QX
-    pairing_data.e = e;
-    cubical_normalization(&pairing_data, P, Q);
-    copy_point(&pairing_data.PQ, PQ);
-
-    // Ensure the input curve has A24 normalised and store
-    // in a struct
-    ec_curve_normalize_A24(E);
-    copy_point(&pairing_data.A24, &E->A24);
-
-    // Compute the Weil pairing e_(2^n)(P, Q)
-    weil_n(r, &pairing_data);
-}
-
 // two helper functions for reducing the tate pairing
 // clear_cofac clears (p + 1) // 2^f for an Fp2 value
-void
+static void
 clear_cofac(fp2_t *r, const fp2_t *a)
 {
-    digit_t exp = *p_cofactor_for_2f;
-    exp >>= 1;
-
-    fp2_t x;
-    fp2_copy(&x, a);
-    fp2_copy(r, a);
-
-    // removes cofac
-    while (exp > 0) {
-        fp2_sqr(r, r);
-        if (exp & 1) {
-            fp2_mul(r, r, &x);
-        }
-        exp >>= 1;
-    }
+    // the cofactor is public, so vartime is fine
+    fp2_pow_vartime(r, a, p_cofactor_for_2f, sizeof(p_cofactor_for_2f) / sizeof(p_cofactor_for_2f[0]));
 }
 
-// applies frobenius a + ib --> a - ib to an fp2 element
+// reduced Tate pairing, normalizes the points, assumes PQ is P+Q in (X:Z) coordinates. Computes 1/x(P) and 1/x(Q) for
+// efficient cubical ladder
 void
-fp2_frob(fp2_t *out, const fp2_t *in)
-{
-    fp_copy(&(out->re), &(in->re));
-    fp_neg(&(out->im), &(in->im));
-}
-
-// reduced Tate pairing, normalizes the points, assumes PQ is P+Q in (X:Z)
-// coordinates. Computes 1/x(P) and 1/x(Q) for efficient cubical ladder
-void
-reduced_tate(fp2_t *r, uint32_t e, const ec_point_t *P, const ec_point_t *Q, const ec_point_t *PQ, ec_curve_t *E)
+pairing_reduced_tate(fp2_t *r,
+                     uint32_t e,
+                     const ec_point_t *P,
+                     const ec_point_t *Q,
+                     const ec_point_t *PQ,
+                     ec_curve_t *E)
 {
     uint32_t e_full = TORSION_EVEN_POWER;
     uint32_t e_diff = e_full - e;
@@ -280,12 +223,11 @@ reduced_tate(fp2_t *r, uint32_t e, const ec_point_t *P, const ec_point_t *Q, con
     // Set (PX/PZ : 1), (QX : QZ : 1), PZ/PX and QZ/QX
     pairing_data.e = e;
     cubical_normalization(&pairing_data, P, Q);
-    copy_point(&pairing_data.PQ, PQ);
+    ec_copy_point(&pairing_data.PQ, PQ);
 
-    // Ensure the input curve has A24 normalised and store
-    // in a struct
+    // Ensure the input curve has A24 normalised and store in a struct
     ec_curve_normalize_A24(E);
-    copy_point(&pairing_data.A24, &E->A24);
+    ec_copy_point(&pairing_data.A24, &E->A24);
 
     monodromy_i(&R, &pairing_data, true);
 
@@ -308,45 +250,38 @@ reduced_tate(fp2_t *r, uint32_t e, const ec_point_t *P, const ec_point_t *Q, con
     }
 }
 
-// Functions to compute discrete logs by computing the Weil pairing of points
-// followed by computing the dlog in Fp^2
-// (If we work with full order points, it would be faster to use the Tate
-// pairings rather than the Weil pairings; this is not implemented yet)
+// Functions to compute discrete logs by computing the Weil pairing of points followed by computing the dlog in Fp^2
+// (If we work with full order points, it would be faster to use the Tate pairings rather than the Weil pairings; this
+// is not implemented yet)
 
 // recursive dlog function
 static bool
-fp2_dlog_2e_rec(digit_t *a, long len, fp2_t *pows_f, fp2_t *pows_g, long stacklen)
+fp2_dlog_2e_rec(ibz_t *a, long len, fp2_t *pows_f, fp2_t *pows_g, long stacklen)
 {
     if (len == 0) {
         // *a = 0;
-        for (int i = 0; i < NWORDS_ORDER; i++) {
-            a[i] = 0;
-        }
+        ibz_set(a, 0, 1);
+        ibz_set_bound(a, NWORDS_ORDER * NUM_BITS_LIMB + 1);
         return true;
     } else if (len == 1) {
-        if (fp2_is_one(&pows_f[stacklen - 1])) {
-            // a = 0;
-            for (int i = 0; i < NWORDS_ORDER; i++) {
-                a[i] = 0;
-            }
-            for (int i = 0; i < stacklen - 1; ++i) {
-                fp2_sqr(&pows_g[i], &pows_g[i]); // new_g = g^2
-            }
-            return true;
-        } else if (fp2_is_equal(&pows_f[stacklen - 1], &pows_g[stacklen - 1])) {
-            // a = 1;
-            a[0] = 1;
-            for (int i = 1; i < NWORDS_ORDER; i++) {
-                a[i] = 0;
-            }
-            for (int i = 0; i < stacklen - 1; ++i) {
-                fp2_mul(&pows_f[i], &pows_f[i], &pows_g[i]); // new_f = f*g
-                fp2_sqr(&pows_g[i], &pows_g[i]);             // new_g = g^2
-            }
-            return true;
-        } else {
-            return false;
+        uint32_t f_is_one = fp2_is_one(&pows_f[stacklen - 1]);
+        uint32_t f_equals_g = fp2_is_equal(&pows_f[stacklen - 1], &pows_g[stacklen - 1]);
+        ibz_set(a, 0, 1);
+        ibz_set_bound(a, NWORDS_ORDER * NUM_BITS_LIMB + 1);
+        // fp2_is_one() returns 0 or 0xFF..FF. In the latter case, we want the increment to wrapround to 0.
+        // NOLINTNEXTLINE(bugprone-misplaced-widening-cast) - widening before the increment would give 0x100000000
+        a->limbs[0] = (digit_t)(f_is_one + 1); // bit = 1 iff f != 1
+        for (int i = 0; i < stacklen - 1; ++i) {
+            fp2_t fg;
+            fp2_mul(&fg, &pows_f[i], &pows_g[i]);               // always computed
+            fp2_select(&pows_f[i], &pows_f[i], &fg, ~f_is_one); // f = bit ? f*g : f
+            fp2_sqr(&pows_g[i], &pows_g[i]);                    // g = g^2
         }
+        // Only the validity bit is branched on (by the recursive callers); it fails only on invalid input, so rejection
+        // is public and honest inputs always pass. The dlog digit itself is computed branchlessly and stays secret
+        uint32_t valid = f_is_one | f_equals_g;
+        CT_TESTING_MAKE_PUBLIC(&valid, sizeof(valid));
+        return valid != 0;
     } else {
         long right = (double)len * 0.5;
         long left = len - right;
@@ -357,18 +292,18 @@ fp2_dlog_2e_rec(digit_t *a, long len, fp2_t *pows_f, fp2_t *pows_g, long stackle
             fp2_sqr(&pows_g[stacklen], &pows_g[stacklen]);
         }
         // uint32_t dlp1 = 0, dlp2 = 0;
-        digit_t dlp1[NWORDS_ORDER], dlp2[NWORDS_ORDER];
+        ibz_t dlp1 = { 0 }, dlp2 = { 0 };
         bool ok;
-        ok = fp2_dlog_2e_rec(dlp1, right, pows_f, pows_g, stacklen + 1);
+        ok = fp2_dlog_2e_rec(&dlp1, right, pows_f, pows_g, stacklen + 1);
         if (!ok)
             return false;
-        ok = fp2_dlog_2e_rec(dlp2, left, pows_f, pows_g, stacklen);
+        ok = fp2_dlog_2e_rec(&dlp2, left, pows_f, pows_g, stacklen);
         if (!ok)
             return false;
         // a = dlp1 + 2^right * dlp2
-        multiple_mp_shiftl(dlp2, right, NWORDS_ORDER);
-        mp_add(a, dlp2, dlp1, NWORDS_ORDER);
-
+        ibz_mul_2exp(&dlp2, &dlp2, right);
+        ibz_add(a, &dlp2, &dlp1);
+        ibz_set_bound(a, NWORDS_ORDER * NUM_BITS_LIMB + 1);
         return true;
     }
 }
@@ -377,6 +312,7 @@ fp2_dlog_2e_rec(digit_t *a, long len, fp2_t *pows_f, fp2_t *pows_g, long stackle
 static bool
 fp2_dlog_2e(digit_t *scal, const fp2_t *f, const fp2_t *g_inverse, int e)
 {
+    ibz_t ibz_scal = { 0 };
     long log, len = e;
     for (log = 0; len > 1; len >>= 1)
         log++;
@@ -390,251 +326,191 @@ fp2_dlog_2e(digit_t *scal, const fp2_t *f, const fp2_t *g_inverse, int e)
         scal[i] = 0;
     }
 
-    bool ok = fp2_dlog_2e_rec(scal, e, pows_f, pows_g, 1);
+    bool ok = fp2_dlog_2e_rec(&ibz_scal, e, pows_f, pows_g, 1);
     assert(ok);
+    assert(ibz_scal.bitlen == NWORDS_ORDER * NUM_BITS_LIMB + 1);
+    ibz_to_digits(scal, &ibz_scal);
 
     return ok;
 }
 
-// Normalize the bases (P, Q), (R, S) and store their inverse
-// and additionally normalise the curve to (A/C : 1)
+// Normalize the bases (P, Q), (R, S) and store their inverse and additionally normalise the curve to (A/C : 1)
 static void
 cubical_normalization_dlog(pairing_dlog_params_t *pairing_dlog_data, ec_curve_t *curve)
 {
-    fp2_t t[11];
     ec_basis_t *PQ = &pairing_dlog_data->PQ;
     ec_basis_t *RS = &pairing_dlog_data->RS;
-    fp2_copy(&t[0], &PQ->P.x);
-    fp2_copy(&t[1], &PQ->P.z);
+    ec_point_t *PmR = &pairing_dlog_data->diff.PmR;
+    ec_point_t *PmS = &pairing_dlog_data->diff.PmS;
+    ec_point_t *RmQ = &pairing_dlog_data->diff.RmQ;
+    ec_point_t *SmQ = &pairing_dlog_data->diff.SmQ;
+
+    fp2_t t[12];
+    fp2_copy(&t[0], &curve->C);
+    fp2_copy(&t[1], &PQ->P.x);
     fp2_copy(&t[2], &PQ->Q.x);
-    fp2_copy(&t[3], &PQ->Q.z);
-    fp2_copy(&t[4], &PQ->PmQ.x);
-    fp2_copy(&t[5], &PQ->PmQ.z);
-    fp2_copy(&t[6], &RS->P.x);
-    fp2_copy(&t[7], &RS->P.z);
-    fp2_copy(&t[8], &RS->Q.x);
-    fp2_copy(&t[9], &RS->Q.z);
-    fp2_copy(&t[10], &curve->C);
+    fp2_copy(&t[3], &PQ->P.z);
+    fp2_copy(&t[4], &PQ->Q.z);
+    fp2_copy(&t[5], &RS->P.z);
+    fp2_copy(&t[6], &RS->Q.z);
+    fp2_copy(&t[7], &PQ->PmQ.z);
+    fp2_copy(&t[8], &PmR->z);
+    fp2_copy(&t[9], &PmS->z);
+    fp2_copy(&t[10], &RmQ->z);
+    fp2_copy(&t[11], &SmQ->z);
+    fp2_batched_inv(t, 12);
 
-    fp2_batched_inv(t, 11);
+    fp2_mul(&curve->A, &curve->A, &t[0]);
+    fp2_set_one(&curve->C);
 
-    fp2_mul(&pairing_dlog_data->ixP, &PQ->P.z, &t[0]);
-    fp2_mul(&PQ->P.x, &PQ->P.x, &t[1]);
+    fp2_mul(&pairing_dlog_data->ixP, &PQ->P.z, &t[1]);
+    fp2_mul(&pairing_dlog_data->ixQ, &PQ->Q.z, &t[2]);
+
+    fp2_mul(&PQ->P.x, &PQ->P.x, &t[3]);
     fp2_set_one(&PQ->P.z);
 
-    fp2_mul(&pairing_dlog_data->ixQ, &PQ->Q.z, &t[2]);
-    fp2_mul(&PQ->Q.x, &PQ->Q.x, &t[3]);
+    fp2_mul(&PQ->Q.x, &PQ->Q.x, &t[4]);
     fp2_set_one(&PQ->Q.z);
 
-    fp2_mul(&PQ->PmQ.x, &PQ->PmQ.x, &t[5]);
-    fp2_set_one(&PQ->PmQ.z);
-
-    fp2_mul(&pairing_dlog_data->ixR, &RS->P.z, &t[6]);
-    fp2_mul(&RS->P.x, &RS->P.x, &t[7]);
+    fp2_mul(&RS->P.x, &RS->P.x, &t[5]);
     fp2_set_one(&RS->P.z);
 
-    fp2_mul(&pairing_dlog_data->ixS, &RS->Q.z, &t[8]);
-    fp2_mul(&RS->Q.x, &RS->Q.x, &t[9]);
+    fp2_mul(&RS->Q.x, &RS->Q.x, &t[6]);
     fp2_set_one(&RS->Q.z);
 
-    fp2_mul(&curve->A, &curve->A, &t[10]);
-    fp2_set_one(&curve->C);
+    fp2_mul(&PQ->PmQ.x, &PQ->PmQ.x, &t[7]);
+    fp2_set_one(&PQ->PmQ.z);
+
+    fp2_mul(&PmR->x, &PmR->x, &t[8]);
+    fp2_set_one(&PmR->z);
+
+    fp2_mul(&PmS->x, &PmS->x, &t[9]);
+    fp2_set_one(&PmS->z);
+
+    fp2_mul(&RmQ->x, &RmQ->x, &t[10]);
+    fp2_set_one(&RmQ->z);
+
+    fp2_mul(&SmQ->x, &SmQ->x, &t[11]);
+    fp2_set_one(&SmQ->z);
 }
 
-// Given two bases <P, Q> and basis = <R, S> compute
-// x(P - R), x(P - S), x(R - Q), x(S - Q)
 static void
-compute_difference_points(pairing_dlog_params_t *pairing_dlog_data, ec_curve_t *curve)
+compute_kappa(fp2_t *k00, fp2_t *k01, fp2_t *k11, const ec_point_t *P, const ec_point_t *Q, const ec_curve_t *E)
 {
-    jac_point_t xyP, xyQ, xyR, xyS, temp;
+    fp2_t xP1xP2, xP1zP2, zP1xP2, zP1zP2;
+    fp2_mul(&xP1xP2, &P->x, &Q->x);
+    fp2_mul(&xP1zP2, &P->x, &Q->z);
+    fp2_mul(&zP1xP2, &P->z, &Q->x);
+    fp2_mul(&zP1zP2, &P->z, &Q->z);
 
-    // lifting the two basis points, assumes that x(P) and x(R)
-    // and the curve itself are normalised to (X : 1)
-    lift_basis_normalized(&xyP, &xyQ, &pairing_dlog_data->PQ, curve);
-    lift_basis_normalized(&xyR, &xyS, &pairing_dlog_data->RS, curve);
+    fp2_sub(k00, &xP1xP2, &zP1zP2);
+    fp2_sqr(k00, k00);
+    // k00=(XP1*XP2-ZP1*ZP2)**2
 
-    // computation of the differences
-    // x(P - R)
-    jac_neg(&temp, &xyR);
-    ADD(&temp, &temp, &xyP, curve);
-    jac_to_xz(&pairing_dlog_data->diff.PmR, &temp);
+    fp2_sub(k11, &xP1zP2, &zP1xP2);
+    fp2_sqr(k11, k11);
+    // k11=(XP1*ZP2-XP2*ZP1)**2
 
-    // x(P - S)
-    jac_neg(&temp, &xyS);
-    ADD(&temp, &temp, &xyP, curve);
-    jac_to_xz(&pairing_dlog_data->diff.PmS, &temp);
+    fp2_mul(k01, &xP1xP2, &zP1zP2);
+    fp2_mul(k01, k01, &E->A);
+    fp2_add(k01, k01, k01);
 
-    // x(R - Q)
-    jac_neg(&temp, &xyQ);
-    ADD(&temp, &temp, &xyR, curve);
-    jac_to_xz(&pairing_dlog_data->diff.RmQ, &temp);
-
-    // x(S - Q)
-    jac_neg(&temp, &xyQ);
-    ADD(&temp, &temp, &xyS, curve);
-    jac_to_xz(&pairing_dlog_data->diff.SmQ, &temp);
+    fp2_add(&xP1xP2, &xP1xP2, &zP1zP2);
+    fp2_add(&xP1zP2, &xP1zP2, &zP1xP2);
+    fp2_mul(&xP1xP2, &xP1xP2, &xP1zP2);
+    fp2_mul(&xP1xP2, &xP1xP2, &E->C);
+    fp2_add(k01, k01, &xP1xP2);
+    fp2_add(k01, k01, k01);
+    // k01=2*((XP1*XP2+ZP1*ZP2)*(XP1*ZP2+XP2*ZP1)*C+2*A*XP1*XP2*ZP1*ZP2)
 }
 
-// Inline all the Weil pairing computations needed for ec_dlog_2_weil
 static void
-weil_dlog(digit_t *r1, digit_t *r2, digit_t *s1, digit_t *s2, pairing_dlog_params_t *pairing_dlog_data)
+shared_difference_point(ec_point_t *P1mP2,
+                        const ec_point_t *P1,
+                        const ec_point_t *P2,
+                        const ec_point_t *P1Q,
+                        const ec_point_t *P2Q,
+                        const ec_curve_t *curve)
 {
+    fp2_t k00, k01, k11;
+    fp2_t k00b, k01b, k11b;
+    compute_kappa(&k00, &k01, &k11, P1, P2, curve);
+    compute_kappa(&k00b, &k01b, &k11b, P1Q, P2Q, curve);
 
-    ec_point_t nP, nQ, nR, nS, nPQ, PnQ, nPR, PnR, nPS, PnS, nRQ, RnQ, nSQ, SnQ;
+    // The common root is:
+    // XP1mP2=k01b*k00-k01*k00b
+    // ZP1mP2=(k11b*k00-k11*k00b)*C
+    fp2_t t;
+    fp2_mul(&t, &k01, &k00b);
+    fp2_mul(&P1mP2->x, &k01b, &k00);
+    fp2_sub(&P1mP2->x, &P1mP2->x, &t);
 
-    copy_point(&nP, &pairing_dlog_data->PQ.P);
-    copy_point(&nQ, &pairing_dlog_data->PQ.Q);
-    copy_point(&nR, &pairing_dlog_data->RS.P);
-    copy_point(&nS, &pairing_dlog_data->RS.Q);
-    copy_point(&nPQ, &pairing_dlog_data->PQ.PmQ);
-    copy_point(&PnQ, &pairing_dlog_data->PQ.PmQ);
-    copy_point(&nPR, &pairing_dlog_data->diff.PmR);
-    copy_point(&nPS, &pairing_dlog_data->diff.PmS);
-    copy_point(&PnR, &pairing_dlog_data->diff.PmR);
-    copy_point(&PnS, &pairing_dlog_data->diff.PmS);
-    copy_point(&nRQ, &pairing_dlog_data->diff.RmQ);
-    copy_point(&nSQ, &pairing_dlog_data->diff.SmQ);
-    copy_point(&RnQ, &pairing_dlog_data->diff.RmQ);
-    copy_point(&SnQ, &pairing_dlog_data->diff.SmQ);
-
-    for (uint32_t i = 0; i < pairing_dlog_data->e - 1; i++) {
-        cubicalADD(&nPQ, &nPQ, &nP, &pairing_dlog_data->ixQ);
-        cubicalADD(&nPR, &nPR, &nP, &pairing_dlog_data->ixR);
-        cubicalDBLADD(&nPS, &nP, &nPS, &nP, &pairing_dlog_data->ixS, &pairing_dlog_data->A24);
-
-        cubicalADD(&PnQ, &PnQ, &nQ, &pairing_dlog_data->ixP);
-        cubicalADD(&RnQ, &RnQ, &nQ, &pairing_dlog_data->ixR);
-        cubicalDBLADD(&SnQ, &nQ, &SnQ, &nQ, &pairing_dlog_data->ixS, &pairing_dlog_data->A24);
-
-        cubicalADD(&PnR, &PnR, &nR, &pairing_dlog_data->ixP);
-        cubicalDBLADD(&nRQ, &nR, &nRQ, &nR, &pairing_dlog_data->ixQ, &pairing_dlog_data->A24);
-
-        cubicalADD(&PnS, &PnS, &nS, &pairing_dlog_data->ixP);
-        cubicalDBLADD(&nSQ, &nS, &nSQ, &nS, &pairing_dlog_data->ixQ, &pairing_dlog_data->A24);
-    }
-
-    // weil(&w0,e,&PQ->P,&PQ->Q,&PQ->PmQ,&A24);
-    translate(&nPQ, &nP);
-    translate(&nPR, &nP);
-    translate(&nPS, &nP);
-    translate(&PnQ, &nQ);
-    translate(&RnQ, &nQ);
-    translate(&SnQ, &nQ);
-    translate(&PnR, &nR);
-    translate(&nRQ, &nR);
-    translate(&PnS, &nS);
-    translate(&nSQ, &nS);
-
-    translate(&nP, &nP);
-    translate(&nQ, &nQ);
-    translate(&nR, &nR);
-    translate(&nS, &nS);
-
-    // computation of the reference weil pairing
-    ec_point_t T0, T1;
-    fp2_t w1[5], w2[5];
-
-    // e(P, Q) = w0
-    point_ratio(&T0, &nPQ, &nP, &pairing_dlog_data->PQ.Q);
-    point_ratio(&T1, &PnQ, &nQ, &pairing_dlog_data->PQ.P);
-    // For the first element we need it's inverse for
-    // fp2_dlog_2e so we swap w1 and w2 here to save inversions
-    fp2_mul(&w2[0], &T0.x, &T1.z);
-    fp2_mul(&w1[0], &T1.x, &T0.z);
-
-    // e(P,R) = w0^r2
-    point_ratio(&T0, &nPR, &nP, &pairing_dlog_data->RS.P);
-    point_ratio(&T1, &PnR, &nR, &pairing_dlog_data->PQ.P);
-    fp2_mul(&w1[1], &T0.x, &T1.z);
-    fp2_mul(&w2[1], &T1.x, &T0.z);
-
-    // e(R,Q) = w0^r1
-    point_ratio(&T0, &nRQ, &nR, &pairing_dlog_data->PQ.Q);
-    point_ratio(&T1, &RnQ, &nQ, &pairing_dlog_data->RS.P);
-    fp2_mul(&w1[2], &T0.x, &T1.z);
-    fp2_mul(&w2[2], &T1.x, &T0.z);
-
-    // e(P,S) = w0^s2
-    point_ratio(&T0, &nPS, &nP, &pairing_dlog_data->RS.Q);
-    point_ratio(&T1, &PnS, &nS, &pairing_dlog_data->PQ.P);
-    fp2_mul(&w1[3], &T0.x, &T1.z);
-    fp2_mul(&w2[3], &T1.x, &T0.z);
-
-    // e(S,Q) = w0^s1
-    point_ratio(&T0, &nSQ, &nS, &pairing_dlog_data->PQ.Q);
-    point_ratio(&T1, &SnQ, &nQ, &pairing_dlog_data->RS.Q);
-    fp2_mul(&w1[4], &T0.x, &T1.z);
-    fp2_mul(&w2[4], &T1.x, &T0.z);
-
-    fp2_batched_inv(w1, 5);
-    for (int i = 0; i < 5; i++) {
-        fp2_mul(&w1[i], &w1[i], &w2[i]);
-    }
-
-    fp2_dlog_2e(r2, &w1[1], &w1[0], pairing_dlog_data->e);
-    fp2_dlog_2e(r1, &w1[2], &w1[0], pairing_dlog_data->e);
-    fp2_dlog_2e(s2, &w1[3], &w1[0], pairing_dlog_data->e);
-    fp2_dlog_2e(s1, &w1[4], &w1[0], pairing_dlog_data->e);
+    fp2_mul(&t, &k11, &k00b);
+    fp2_mul(&P1mP2->z, &k11b, &k00);
+    fp2_sub(&P1mP2->z, &P1mP2->z, &t);
+    fp2_mul(&P1mP2->z, &P1mP2->z, &curve->C);
 }
 
-void
-ec_dlog_2_weil(digit_t *r1,
-               digit_t *r2,
-               digit_t *s1,
-               digit_t *s2,
-               ec_basis_t *PQ,
-               const ec_basis_t *RS,
-               ec_curve_t *curve,
-               int e)
+// Given two bases <P, Q> and basis = <R, S> compute x(P - R), x(P - S), x(R - Q), x(S - Q)
+static void
+compute_shared_difference_points(pairing_dlog_params_t *pairing_dlog_data, ec_curve_t *curve)
 {
-    assert(test_point_order_twof(&PQ->Q, curve, e));
+    fp2_t k00, k01, k11;
+    compute_kappa(&k00, &k01, &k11, &pairing_dlog_data->PQ.P, &pairing_dlog_data->RS.P, curve);
 
-    // precomputing the correct curve data
-    ec_curve_normalize_A24(curve);
+    //(X:Z) is solution of k11 X^2 - k01 XZ + k00 Z^2=0
+    // delta=k01^2 - 4 k00 k11
+    ec_point_t *PmR = &pairing_dlog_data->diff.PmR;
+    fp2_mul(&PmR->z, &k00, &k11);
+    fp2_add(&PmR->z, &PmR->z, &PmR->z);
+    fp2_add(&PmR->z, &PmR->z, &PmR->z);
+    fp2_sqr(&PmR->x, &k01);
+    fp2_sub(&PmR->x, &PmR->x, &PmR->z); // k01^2-4k00 k11
+    fp2_sqrt_verify(&PmR->x);
+    fp2_add(&PmR->x, &k01, &PmR->x); // k01+sqrt(k01^2-4k00 k11)
+    fp2_add(&PmR->z, &k11, &k11);    // 2k11
 
-    pairing_dlog_params_t pairing_dlog_data;
-    pairing_dlog_data.e = e;
-    pairing_dlog_data.PQ = *PQ;
-    pairing_dlog_data.RS = *RS;
-    pairing_dlog_data.A24 = curve->A24;
-
-    cubical_normalization_dlog(&pairing_dlog_data, curve);
-    compute_difference_points(&pairing_dlog_data, curve);
-
-    weil_dlog(r1, r2, s1, s2, &pairing_dlog_data);
-
-#ifndef NDEBUG
-    ec_point_t test;
-    ec_biscalar_mul(&test, r1, r2, e, PQ, curve);
-    // R = [r1]P + [r2]Q
-    assert(ec_is_equal(&test, &RS->P));
-    ec_biscalar_mul(&test, s1, s2, e, PQ, curve);
-    // S = [s1]P + [s2]Q
-    assert(ec_is_equal(&test, &RS->Q));
-#endif
+    // Q-R = (P-R) - (P-Q)
+    shared_difference_point(&pairing_dlog_data->diff.RmQ,
+                            &pairing_dlog_data->RS.P,
+                            &pairing_dlog_data->PQ.Q,
+                            PmR,
+                            &pairing_dlog_data->PQ.PmQ,
+                            curve);
+    // S-P = (R-P) - (R-S)
+    shared_difference_point(&pairing_dlog_data->diff.PmS,
+                            &pairing_dlog_data->PQ.P,
+                            &pairing_dlog_data->RS.Q,
+                            PmR,
+                            &pairing_dlog_data->RS.PmQ,
+                            curve);
+    // Q-S = (P-S) - (P-Q)
+    shared_difference_point(&pairing_dlog_data->diff.SmQ,
+                            &pairing_dlog_data->RS.Q,
+                            &pairing_dlog_data->PQ.Q,
+                            &pairing_dlog_data->diff.PmS,
+                            &pairing_dlog_data->PQ.PmQ,
+                            curve);
 }
 
-// Inline all the Tate pairing computations needed for ec_dlog_2_weil
-// including reduction, assumes a bases PQ of full E[2^e_full] torsion
-// and a bases RS of smaller E[2^e] torsion
+// Inline all the Tate pairing computations needed for pairing_dlog_2_tate including reduction, assumes a bases PQ of
+// the full E[2^e_full] torsion and a bases RS of smaller E[2^e] torsion
 static void
 tate_dlog_partial(digit_t *r1, digit_t *r2, digit_t *s1, digit_t *s2, pairing_dlog_params_t *pairing_dlog_data)
 {
-
     uint32_t e_full = TORSION_EVEN_POWER;
     uint32_t e_diff = e_full - pairing_dlog_data->e;
 
-    ec_point_t nP, nQ, nR, nS, nPQ, PnR, PnS, nRQ, nSQ;
+    ec_point_t nP, nR, nS, nPQ, PnR, PnS, nRQ, nSQ;
 
-    copy_point(&nP, &pairing_dlog_data->PQ.P);
-    copy_point(&nQ, &pairing_dlog_data->PQ.Q);
-    copy_point(&nR, &pairing_dlog_data->RS.P);
-    copy_point(&nS, &pairing_dlog_data->RS.Q);
-    copy_point(&nPQ, &pairing_dlog_data->PQ.PmQ);
-    copy_point(&PnR, &pairing_dlog_data->diff.PmR);
-    copy_point(&PnS, &pairing_dlog_data->diff.PmS);
-    copy_point(&nRQ, &pairing_dlog_data->diff.RmQ);
-    copy_point(&nSQ, &pairing_dlog_data->diff.SmQ);
+    ec_copy_point(&nP, &pairing_dlog_data->PQ.P);
+    ec_copy_point(&nR, &pairing_dlog_data->RS.P);
+    ec_copy_point(&nS, &pairing_dlog_data->RS.Q);
+    ec_copy_point(&nPQ, &pairing_dlog_data->PQ.PmQ);
+    ec_copy_point(&PnR, &pairing_dlog_data->diff.PmR);
+    ec_copy_point(&PnS, &pairing_dlog_data->diff.PmS);
+    ec_copy_point(&nRQ, &pairing_dlog_data->diff.RmQ);
+    ec_copy_point(&nSQ, &pairing_dlog_data->diff.SmQ);
 
     for (uint32_t i = 0; i < e_full - 1; i++) {
         cubicalDBLADD(&nPQ, &nP, &nPQ, &nP, &pairing_dlog_data->ixQ, &pairing_dlog_data->A24);
@@ -655,7 +531,6 @@ tate_dlog_partial(digit_t *r1, digit_t *r2, digit_t *s1, digit_t *s2, pairing_dl
     translate(&nSQ, &nS);
 
     translate(&nP, &nP);
-    translate(&nQ, &nQ);
     translate(&nR, &nR);
     translate(&nS, &nS);
 
@@ -724,14 +599,14 @@ tate_dlog_partial(digit_t *r1, digit_t *r2, digit_t *s1, digit_t *s2, pairing_dl
 }
 
 void
-ec_dlog_2_tate(digit_t *r1,
-               digit_t *r2,
-               digit_t *s1,
-               digit_t *s2,
-               const ec_basis_t *PQ,
-               const ec_basis_t *RS,
-               ec_curve_t *curve,
-               int e)
+pairing_dlog_2_tate(digit_t *r1,
+                    digit_t *r2,
+                    digit_t *s1,
+                    digit_t *s2,
+                    const ec_basis_t *PQ,
+                    const ec_basis_t *RS,
+                    ec_curve_t *curve,
+                    int e)
 {
     // assume PQ is a full torsion basis
     // returns a, b, c, d such that R = [a]P + [b]Q, S = [c]P + [d]Q
@@ -751,8 +626,8 @@ ec_dlog_2_tate(digit_t *r1,
     pairing_dlog_data.RS = *RS;
     pairing_dlog_data.A24 = curve->A24;
 
+    compute_shared_difference_points(&pairing_dlog_data, curve);
     cubical_normalization_dlog(&pairing_dlog_data, curve);
-    compute_difference_points(&pairing_dlog_data, curve);
     tate_dlog_partial(r1, r2, s1, s2, &pairing_dlog_data);
 
 #ifndef NDEBUG

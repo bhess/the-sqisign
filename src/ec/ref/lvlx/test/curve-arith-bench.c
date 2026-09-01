@@ -3,17 +3,20 @@
 #include <assert.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include "test_extras.h"
 #include <ec.h>
+#include <mp_internal.h>
+#include <mp.h>
 #include <isog.h>
 #include <rng.h>
 
 #define STRINGIFY2(x) #x
 #define STRINGIFY(x) STRINGIFY2(x)
 
-uint64_t
-bench_xDBL(unsigned int Nbench)
+static uint64_t
+ec_bench_xDBL(unsigned int Nbench)
 {
     uint64_t cycles0, cycles1;
     unsigned int i;
@@ -26,14 +29,14 @@ bench_xDBL(unsigned int Nbench)
     }
     cycles0 = cpucycles();
     for (i = 0; i < Nbench; i++) {
-        xDBL(&P[i], &P[i], &A24[i]);
+        ec_xDBL(&P[i], &P[i], &A24[i]);
     }
     cycles1 = cpucycles();
     return cycles1 - cycles0;
 }
 
-uint64_t
-bench_xEVAL4(unsigned int Nbench)
+static uint64_t
+ec_bench_xEVAL4(unsigned int Nbench)
 {
     uint64_t cycles0, cycles1;
     unsigned int i;
@@ -43,20 +46,95 @@ bench_xEVAL4(unsigned int Nbench)
         fp2_random_test(&(P[i].x));
         fp2_random_test(&(P[i].z));
         for (int j = 0; j < 3; j++) {
-            fp2_random_test(&(KPS[i].K[j].x));
-            fp2_random_test(&(KPS[i].K[j].z));
+            fp2_random_test(&(KPS[i].K[j]));
         }
     }
     cycles0 = cpucycles();
     for (i = 0; i < Nbench; i++) {
-        xeval_4(&P[i], &P[i], 1, &KPS[i]);
+        iso_xeval_4(&P[i], &P[i], 1, &KPS[i]);
     }
     cycles1 = cpucycles();
     return cycles1 - cycles0;
 }
 
-uint64_t
-bench_isog_strategy(unsigned int Nbench)
+static uint64_t
+ec_bench_biscalar_mul(unsigned int Nbench)
+{
+    uint64_t cycles0, cycles1;
+    unsigned int i;
+    ec_basis_t PQ[Nbench];
+    ec_curve_t E[Nbench];
+    ibz_t p[Nbench], q[Nbench];
+    ibz_t bound = { 0 };
+    memset(p, 0, sizeof(p));
+    memset(q, 0, sizeof(q));
+    ibz_mul_2exp(&bound, &ibz_const_one, TORSION_EVEN_POWER);
+    ibz_sub(&bound, &bound, &ibz_const_one);
+    ibz_set_bound(&bound, TORSION_EVEN_POWER + 1);
+    for (i = 0; i < Nbench; i++) {
+        fp2_random_test(&(PQ[i].P.x));
+        fp2_random_test(&(PQ[i].P.z));
+        fp2_random_test(&(PQ[i].Q.x));
+        fp2_random_test(&(PQ[i].Q.z));
+        fp2_random_test(&(PQ[i].PmQ.x));
+        fp2_random_test(&(PQ[i].PmQ.z));
+        fp2_random_test(&(E[i].A));
+        fp2_random_test(&(E[i].C));
+        ec_normalize_curve_and_A24(&E[i]);
+        ibz_rand_interval(&p[i], &ibz_const_zero, &bound);
+        ibz_rand_interval(&q[i], &ibz_const_zero, &bound);
+    }
+    cycles0 = cpucycles();
+    for (i = 0; i < Nbench; i++) {
+        if (!ec_biscalar_mul(&PQ[i].P, p[i].limbs, q[i].limbs, TORSION_EVEN_POWER, &PQ[i], &E[i])) {
+            printf("Error returned by ec_biscalar_mul\n");
+            return 1;
+        }
+    }
+    cycles1 = cpucycles();
+    return cycles1 - cycles0;
+}
+
+static uint64_t
+ec_bench_biscalar_mul_verif(unsigned int Nbench)
+{
+    uint64_t cycles0, cycles1;
+    unsigned int i;
+    ec_basis_t PQ[Nbench];
+    ec_curve_t E[Nbench];
+    ibz_t p[Nbench], q[Nbench];
+    ibz_t bound = { 0 };
+    memset(p, 0, sizeof(p));
+    memset(q, 0, sizeof(q));
+    ibz_mul_2exp(&bound, &ibz_const_one, TORSION_EVEN_POWER);
+    ibz_sub(&bound, &bound, &ibz_const_one);
+    ibz_set_bound(&bound, TORSION_EVEN_POWER + 1);
+    for (i = 0; i < Nbench; i++) {
+        fp2_random_test(&(PQ[i].P.x));
+        fp2_random_test(&(PQ[i].P.z));
+        fp2_random_test(&(PQ[i].Q.x));
+        fp2_random_test(&(PQ[i].Q.z));
+        fp2_random_test(&(PQ[i].PmQ.x));
+        fp2_random_test(&(PQ[i].PmQ.z));
+        fp2_random_test(&(E[i].A));
+        fp2_random_test(&(E[i].C));
+        ec_normalize_curve_and_A24(&E[i]);
+        ibz_rand_interval(&p[i], &ibz_const_zero, &bound);
+        ibz_rand_interval(&q[i], &ibz_const_zero, &bound);
+    }
+    cycles0 = cpucycles();
+    for (i = 0; i < Nbench; i++) {
+        if (!ec_biscalar_mul_verif(&PQ[i].P, p[i].limbs, q[i].limbs, TORSION_EVEN_POWER, &PQ[i], &E[i])) {
+            printf("Error returned by ec_biscalar_mul\n");
+            return 1;
+        }
+    }
+    cycles1 = cpucycles();
+    return cycles1 - cycles0;
+}
+
+static uint64_t
+ec_bench_isog_strategy(unsigned int Nbench)
 {
     uint64_t cycles0, cycles1;
     unsigned int i;
@@ -66,23 +144,23 @@ bench_isog_strategy(unsigned int Nbench)
     ec_curve_init(&E0);
     fp2_set_small(&(E0.A), 6);
     fp2_set_one(&(E0.C));
-    (void)ec_curve_to_basis_2f_to_hint(&basis2, &E0, TORSION_EVEN_POWER);
+    (void)ec_curve_to_basis_2f_to_hint(&basis2, &E0, TORSION_EVEN_POWER, 0);
     for (i = 0; i < Nbench; i++) {
-        copy_curve(&phi[i].curve, &E0);
+        ec_copy_curve(&phi[i].curve, &E0);
         phi[i].length = TORSION_EVEN_POWER;
         if (i == 0) {
-            xADD(&phi[i].kernel, &basis2.P, &basis2.Q, &basis2.PmQ);
+            ec_xADD(&phi[i].kernel, &basis2.P, &basis2.Q, &basis2.PmQ);
         }
         if (i == 1) {
-            xADD(&phi[i].kernel, &phi[i - 1].kernel, &basis2.Q, &basis2.P);
+            ec_xADD(&phi[i].kernel, &phi[i - 1].kernel, &basis2.Q, &basis2.P);
         }
         if (i > 1) {
-            xADD(&phi[i].kernel, &phi[i - 1].kernel, &basis2.Q, &phi[i - 2].kernel);
+            ec_xADD(&phi[i].kernel, &phi[i - 1].kernel, &basis2.Q, &phi[i - 2].kernel);
         }
     }
     cycles0 = cpucycles();
     for (i = 2; i < Nbench; i++) {
-        if (ec_eval_even(&phi[i].curve, &phi[i], NULL, 0)) {
+        if (iso_isogeny_2chain(&phi[i].curve, &phi[i])) {
             printf("Failed isogeny strategy\n");
             return 0;
         }
@@ -144,20 +222,29 @@ main(int argc, char *argv[])
 #endif
 
     randombytes_init((unsigned char *)seed, NULL, 256);
+    if (init_test_rng(seed) != 0) {
+        return 1;
+    }
     cpucycles_init();
 
     printf("Benchmarking elliptic curve arithmetic for " STRINGIFY(SQISIGN_VARIANT) ":\n\n");
 
     uint64_t cycles;
 
-    cycles = bench_xDBL(10 * iterations);
+    cycles = ec_bench_xDBL(10 * iterations);
     printf("Bench xDBL_A24:\t%" PRIu64 " cycles\n", cycles / (10 * iterations));
 
-    cycles = bench_xEVAL4(iterations);
+    cycles = ec_bench_xEVAL4(iterations);
     printf("Bench xEVAL4:\t%" PRIu64 " cycles\n", cycles / iterations);
 
-    cycles = bench_isog_strategy(iterations);
+    cycles = ec_bench_isog_strategy(iterations);
     printf("Bench isog strategy:\t%" PRIu64 " cycles\n", cycles / iterations);
+
+    cycles = ec_bench_biscalar_mul(iterations);
+    printf("Bench ec biscalar mul:\t%" PRIu64 " cycles\n", cycles / iterations);
+
+    cycles = ec_bench_biscalar_mul_verif(iterations);
+    printf("Bench ec biscalar mul verif:\t%" PRIu64 " cycles\n", cycles / iterations);
 
     return 0;
 }

@@ -28,7 +28,8 @@ else()
 	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} -Og -g")
 	else()
-		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} -O3")
+		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} -O2")
+		string(REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 	endif()
 	set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} -std=c11 -Wno-error=strict-prototypes -fvisibility=hidden -funroll-loops -Wno-error=implicit-function-declaration -Wno-error=attributes")
 	if(CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -36,14 +37,25 @@ else()
 		set(STRICT_OPTIONS_CPP "${STRICT_OPTIONS_CPP} -Wno-pass-failed")
 	endif()
 	if(ENABLE_STRICT)
-		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} ${STRICT_OPTIONS_CPP} -Werror -Wextra -Wno-unused-parameter -fno-strict-aliasing")
+		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} ${STRICT_OPTIONS_CPP} -Werror -Wextra -fno-strict-aliasing")
+	endif()
+	if(ENABLE_PEDANTIC)
+		# pedantic (ISO-C) mode, no unused functions, shadow and strict prototypes
+		string(REPLACE "-Wno-unused-function" "" STRICT_OPTIONS_C "${STRICT_OPTIONS_C}")
+		set(STRICT_OPTIONS_C "${STRICT_OPTIONS_C} -Wpedantic -Wshadow -Wstrict-prototypes")
+		add_compile_definitions(C_PEDANTIC_MODE)
 	endif()
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${STRICT_OPTIONS_C}")
 
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT CMAKE_BUILD_TYPE STREQUAL "COVERAGE" AND NOT ENABLE_CT_TESTING)
 	# enable link-time optimization (LTO)
+	# Not for CT-testing builds: the valgrind suppressions in test/ct-quaternion.supp are anchored on function names,
+	# and LTO breaks that twice over - it inlines across module boundaries (quaternion code ends up attributed to
+	# id2iso/hd frames), and valgrind versions <= 3.24 cannot resolve the names of LTO-inlined frames at all
+	# (reported as UnknownInlinedFun), so the suppressions silently stop matching. CT test binaries have no
+	# performance requirements.
 	include(CheckIPOSupported)
 	check_ipo_supported(RESULT result)
 	if(result)
