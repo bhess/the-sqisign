@@ -723,7 +723,7 @@ mp_run(int iterations)
     ******************************/
 
     for (size_t pi = 0; pi < NUM_TEST_PRIMES; pi++) {
-        ibz_t modp = test_primes[pi];
+        ibz_t modp = *test_primes[pi];
         printf("\n-- modulus ~ %d bits (test_primes[%zu]) --\n", modp.bitlen - 1, pi);
         bench_ibz_legendre(iterations, &modp);
         bench_ibz_invmod(iterations, &modp);

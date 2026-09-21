@@ -40,7 +40,7 @@ extern const ibz_t p2493;
 #else
 #define NUM_TEST_PRIMES 11
 #endif
-extern ibz_t test_primes[NUM_TEST_PRIMES];
+extern const ibz_t *const test_primes[NUM_TEST_PRIMES];
 
 uint32_t rand_u32_range(uint32_t bound);
 uint64_t rand_u64(void);

@@ -179,13 +179,14 @@ const ibz_t p2493 = {
 #endif
 
 #if BITS < 384
-ibz_t test_primes[NUM_TEST_PRIMES] = { p10, p60, p110, p260, p957 };
+const ibz_t *const test_primes[NUM_TEST_PRIMES] = { &p10, &p60, &p110, &p260, &p957 };
 #elif BITS < 512
-ibz_t test_primes[NUM_TEST_PRIMES] = { p10, p60, p110, p260, p390, p957, p1469 };
+const ibz_t *const test_primes[NUM_TEST_PRIMES] = { &p10, &p60, &p110, &p260, &p390, &p957, &p1469 };
 #elif BITS < 704
-ibz_t test_primes[NUM_TEST_PRIMES] = { p10, p60, p110, p260, p390, p520, p957, p1469, p1981 };
+const ibz_t *const test_primes[NUM_TEST_PRIMES] = { &p10, &p60, &p110, &p260, &p390, &p520, &p957, &p1469, &p1981 };
 #else
-ibz_t test_primes[NUM_TEST_PRIMES] = { p10, p60, p110, p260, p390, p520, p650, p957, p1469, p1981, p2493 };
+const ibz_t *const test_primes[NUM_TEST_PRIMES] = { &p10,  &p60,  &p110,  &p260,  &p390, &p520,
+                                                    &p650, &p957, &p1469, &p1981, &p2493 };
 #endif
 
 uint32_t

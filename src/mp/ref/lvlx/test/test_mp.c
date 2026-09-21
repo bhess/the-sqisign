@@ -641,7 +641,7 @@ int
 test_ibz_pow_mod(unsigned int Ntest)
 {
     for (size_t mi = 0; mi < NUM_TEST_PRIMES; mi++) {
-        ibz_t m = test_primes[mi];
+        ibz_t m = *test_primes[mi];
         for (unsigned int i = 0; i < Ntest; i++) {
             uint32_t e = rand_u32_range(31);
             ibz_t x = { 0 }, e_ibz = { 0 };
@@ -1145,7 +1145,7 @@ int
 test_ibz_legendre(unsigned int Ntest)
 {
     for (size_t pi = 0; pi < NUM_TEST_PRIMES; pi++) {
-        ibz_t pz = test_primes[pi];
+        ibz_t pz = *test_primes[pi];
 
         if (ibz_legendre(&ibz_const_zero, &pz) != 0) {
             printf("Failed: ibz_legendre(0, p) != 0 (pbits=%d)\n", pz.bitlen - 1);
@@ -1181,7 +1181,7 @@ int
 test_ibz_invmod(unsigned int Ntest)
 {
     for (size_t pi = 0; pi < NUM_TEST_PRIMES; pi++) {
-        ibz_t m = test_primes[pi];
+        ibz_t m = *test_primes[pi];
         for (unsigned int i = 0; i < Ntest; i++) {
             ibz_t a = { 0 };
             rand_ibz_nonneg(&a, m.bitlen - 2);
@@ -1453,7 +1453,7 @@ int
 test_ibz_sqrt_mod_p(unsigned int Ntest)
 {
     for (size_t pi = 0; pi < NUM_TEST_PRIMES; pi++) {
-        ibz_t q = test_primes[pi];
+        ibz_t q = *test_primes[pi];
         for (unsigned int i = 0; i < Ntest; i++) {
             ibz_t a = { 0 };
             rand_ibz_nonneg(&a, q.bitlen - 2);
@@ -1487,7 +1487,7 @@ int
 test_ibz_sqrt_m1_mod(void)
 {
     for (size_t pi = 0; pi < NUM_TEST_PRIMES; pi++) {
-        ibz_t pz = test_primes[pi];
+        ibz_t pz = *test_primes[pi];
         ibz_t r = { 0 };
         if ((ibz_get(&pz) & 3) != 1)
             continue;
@@ -1534,7 +1534,7 @@ test_ibz_probab_prime(void)
     }
 
     for (size_t i = 0; i < NUM_TEST_PRIMES; i++) {
-        ibz_t p = test_primes[i];
+        ibz_t p = *test_primes[i];
         ibz_t pp1 = { 0 };
         ibz_add(&pp1, &p, &ibz_const_one);
         ibz_set_bound(&pp1, p.bitlen); // ibz_add conservatively bumps bitlen by 1; p+1 still fits in p's own bound
