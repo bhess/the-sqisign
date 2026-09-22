@@ -66,7 +66,8 @@ gluing_special_xDBLADD(ec_point_t *R,
 static void
 batch_ec_normalise_points(ec_point_t *Pts, uint8_t len)
 {
-    fp2_t mem[len];
+    fp2_t mem[4];
+    assert(len <= 4);
     uint8_t i;
     for (i = 0; i < len; i++) {
         fp2_copy(&mem[i], &Pts[i].z);
@@ -620,7 +621,9 @@ gluing_start_chain(theta_gluing_t *first_step,
     int current = 0;
 
     // T_11, T_21 are both over E1, T_12, T_22 are over E2
-    theta_couple_point_t T_11[space], T_12[space], T_21[space], T_22[space];
+    theta_couple_point_t T_11[LOG2P + 1], T_12[LOG2P + 1], T_21[LOG2P + 1], T_22[LOG2P + 1];
+    assert(space <= LOG2P + 1);
+    (void)space;
 
     // normalise points
     {

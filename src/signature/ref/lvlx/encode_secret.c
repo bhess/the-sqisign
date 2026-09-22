@@ -18,11 +18,15 @@ encode_digits(byte_t *enc, const digit_t *x, size_t nbytes)
     const size_t ndigits = nbytes / sizeof(digit_t);
     const size_t rem = nbytes % sizeof(digit_t);
 
-    for (size_t i = 0; i < ndigits; i++)
-        ((digit_t *)enc)[i] = BSWAP_DIGIT(x[i]);
+    for (size_t i = 0; i < ndigits; i++) {
+        digit_t d = x[i];
+        for (size_t j = 0; j < sizeof(digit_t); j++, d >>= 8)
+            enc[i * sizeof(digit_t) + j] = (byte_t)d;
+    }
     if (rem) {
-        digit_t ld = BSWAP_DIGIT(x[ndigits]);
-        memcpy(enc + ndigits * sizeof(digit_t), (byte_t *)&ld, rem);
+        digit_t d = x[ndigits];
+        for (size_t j = 0; j < rem; j++, d >>= 8)
+            enc[ndigits * sizeof(digit_t) + j] = (byte_t)d;
     }
 #else
     memcpy(enc, (const byte_t *)x, nbytes);
@@ -59,8 +63,8 @@ sig_ibz_to_bytes(byte_t *enc, const ibz_t *x, size_t nbytes, bool sgn)
         assert(ibz_cmp(&abs, &bnd) < 0);
     }
 #endif
-    const size_t digits = (nbytes + sizeof(digit_t) - 1) / sizeof(digit_t);
-    digit_t d[digits];
+    digit_t d[NLIMBS(8 * MAXB(FP_ENCODED_BYTES, CHALLENGE_BYTES))];
+    assert(nbytes <= sizeof(d));
     memset(d, 0, sizeof(d));
     assert(ibz_is_positive(x));
     assert(ibz_bitsize(x) < (int)(nbytes + sizeof(digit_t) - 1) * 8);
@@ -76,7 +80,8 @@ sig_ibz_from_bytes(ibz_t *x, const byte_t *enc, size_t nbytes)
     assert(nbytes > 0);
     const size_t ndigits = (nbytes + sizeof(digit_t) - 1) / sizeof(digit_t);
     assert(ndigits > 0);
-    digit_t d[ndigits];
+    digit_t d[NLIMBS(8 * MAXB(FP_ENCODED_BYTES, CHALLENGE_BYTES))];
+    assert(ndigits <= sizeof(d) / sizeof(*d));
     memset(d, 0, sizeof(d));
     decode_digits(d, enc, nbytes, ndigits);
     // non-negative

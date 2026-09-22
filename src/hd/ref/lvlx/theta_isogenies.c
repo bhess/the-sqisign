@@ -107,6 +107,9 @@ theta_chain_compute_impl(uint16_t n,
                          uint8_t numP,
                          int8_t mode)
 {
+    if (n == 0 || n > TORSION_EVEN_POWER - HD_EXTRA_TORSION || numP > 3)
+        return 0;
+
     ec_curve_normalize_A24(&E12->E1);
     ec_curve_normalize_A24(&E12->E2);
 
@@ -119,18 +122,16 @@ theta_chain_compute_impl(uint16_t n,
 #endif
 
     // points to evaluate throughout the chain
-    theta_point_t pts[numP ? numP : 1];
+    theta_point_t pts[3];
 
     // init chain
-    uint8_t space = 1;
-    for (uint16_t i = 1; i < n; i *= 2)
-        ++space;
+    const uint8_t space = LOG2P + 1;
 
-    uint16_t todo[space];
+    uint16_t todo[LOG2P + 1];
     todo[0] = n;
 
     // kernel points for the remaining isogeny steps
-    theta_point_t thetaQ1[space], thetaQ2[space];
+    theta_point_t thetaQ1[LOG2P + 1], thetaQ2[LOG2P + 1];
 
     //-------------- GLUING STEP --------------------
     // start new gluing

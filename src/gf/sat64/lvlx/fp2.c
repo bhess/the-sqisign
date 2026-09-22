@@ -1,5 +1,6 @@
 #include "fp2.h"
 #include <encoded_sizes.h>
+#include <assert.h>
 #include <inttypes.h>
 
 /* Arithmetic modulo X^2 + 1 */
@@ -58,7 +59,8 @@ fp2_inv(fp2_t *x)
 void
 fp2_batched_inv(fp2_t *x, int len)
 {
-    fp2_t t1[len], t2[len];
+    assert(len >= 1 && len <= 12);
+    fp2_t t1[12], t2[12];
     fp2_t inverse;
 
     // x = x0,...,xn

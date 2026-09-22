@@ -313,12 +313,10 @@ static bool
 fp2_dlog_2e(digit_t *scal, const fp2_t *f, const fp2_t *g_inverse, int e)
 {
     ibz_t ibz_scal = { 0 };
-    long log, len = e;
-    for (log = 0; len > 1; len >>= 1)
-        log++;
-    log += 1;
+    if (e <= 0 || e > TORSION_EVEN_POWER)
+        return false;
 
-    fp2_t pows_f[log], pows_g[log];
+    fp2_t pows_f[LOG2P + 1], pows_g[LOG2P + 1];
     pows_f[0] = *f;
     pows_g[0] = *g_inverse;
 
