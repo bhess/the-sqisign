@@ -318,7 +318,8 @@ fp2_dlog_2e(digit_t *scal, const fp2_t *f, const fp2_t *g_inverse, int e)
         log++;
     log += 1;
 
-    fp2_t pows_f[log], pows_g[log];
+    SQISIGN_VLA(fp2_t, pows_f, log);
+    SQISIGN_VLA(fp2_t, pows_g, log);
     pows_f[0] = *f;
     pows_g[0] = *g_inverse;
 

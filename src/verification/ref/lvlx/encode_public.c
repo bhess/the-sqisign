@@ -16,8 +16,10 @@ encode_digits(byte_t *enc, const digit_t *x, size_t nbytes)
     const size_t ndigits = nbytes / sizeof(digit_t);
     const size_t rem = nbytes % sizeof(digit_t);
 
-    for (size_t i = 0; i < ndigits; i++)
-        ((digit_t *)enc)[i] = BSWAP_DIGIT(x[i]);
+    for (size_t i = 0; i < ndigits; i++) {
+        digit_t d = BSWAP_DIGIT(x[i]);
+        memcpy(enc + i * sizeof(digit_t), &d, sizeof(d));
+    }
     if (rem) {
         digit_t ld = BSWAP_DIGIT(x[ndigits]);
         memcpy(enc + ndigits * sizeof(digit_t), (byte_t *)&ld, rem);

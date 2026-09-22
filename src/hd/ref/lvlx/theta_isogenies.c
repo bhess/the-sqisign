@@ -119,18 +119,19 @@ theta_chain_compute_impl(uint16_t n,
 #endif
 
     // points to evaluate throughout the chain
-    theta_point_t pts[numP ? numP : 1];
+    SQISIGN_VLA(theta_point_t, pts, numP ? numP : 1);
 
     // init chain
     uint8_t space = 1;
     for (uint16_t i = 1; i < n; i *= 2)
         ++space;
 
-    uint16_t todo[space];
+    SQISIGN_VLA(uint16_t, todo, space);
     todo[0] = n;
 
     // kernel points for the remaining isogeny steps
-    theta_point_t thetaQ1[space], thetaQ2[space];
+    SQISIGN_VLA(theta_point_t, thetaQ1, space);
+    SQISIGN_VLA(theta_point_t, thetaQ2, space);
 
     //-------------- GLUING STEP --------------------
     // start new gluing

@@ -18,8 +18,10 @@ encode_digits(byte_t *enc, const digit_t *x, size_t nbytes)
     const size_t ndigits = nbytes / sizeof(digit_t);
     const size_t rem = nbytes % sizeof(digit_t);
 
-    for (size_t i = 0; i < ndigits; i++)
-        ((digit_t *)enc)[i] = BSWAP_DIGIT(x[i]);
+    for (size_t i = 0; i < ndigits; i++) {
+        digit_t d = BSWAP_DIGIT(x[i]);
+        memcpy(enc + i * sizeof(digit_t), &d, sizeof(d));
+    }
     if (rem) {
         digit_t ld = BSWAP_DIGIT(x[ndigits]);
         memcpy(enc + ndigits * sizeof(digit_t), (byte_t *)&ld, rem);
@@ -60,8 +62,8 @@ sig_ibz_to_bytes(byte_t *enc, const ibz_t *x, size_t nbytes, bool sgn)
     }
 #endif
     const size_t digits = (nbytes + sizeof(digit_t) - 1) / sizeof(digit_t);
-    digit_t d[digits];
-    memset(d, 0, sizeof(d));
+    SQISIGN_VLA(digit_t, d, digits);
+    memset(d, 0, digits * sizeof(*d));
     assert(ibz_is_positive(x));
     assert(ibz_bitsize(x) < (int)(nbytes + sizeof(digit_t) - 1) * 8);
     // non-negative, straightforward.
@@ -76,8 +78,8 @@ sig_ibz_from_bytes(ibz_t *x, const byte_t *enc, size_t nbytes)
     assert(nbytes > 0);
     const size_t ndigits = (nbytes + sizeof(digit_t) - 1) / sizeof(digit_t);
     assert(ndigits > 0);
-    digit_t d[ndigits];
-    memset(d, 0, sizeof(d));
+    SQISIGN_VLA(digit_t, d, ndigits);
+    memset(d, 0, ndigits * sizeof(*d));
     decode_digits(d, enc, nbytes, ndigits);
     // non-negative
     ibz_copy_digits(x, d, ndigits);
@@ -114,6 +116,7 @@ secret_key_to_bytes(byte_t *enc, const secret_key_t *sk, const public_key_t *pk)
     enc = sig_ibz_to_bytes(enc, &sk->mat_BAcan_to_BA0_two.m[1][1], CHALLENGE_BYTES, false);
 
     assert(enc - start == SECRETKEY_BYTES);
+    (void)enc;
 }
 
 void
@@ -134,6 +137,7 @@ secret_key_from_bytes(secret_key_t *sk, public_key_t *pk, const byte_t *enc)
     enc = sig_ibz_from_bytes(&sk->mat_BAcan_to_BA0_two.m[1][1], enc, CHALLENGE_BYTES);
 
     assert(enc - start == SECRETKEY_BYTES);
+    (void)enc;
 
     sk->curve = pk->curve;
 }

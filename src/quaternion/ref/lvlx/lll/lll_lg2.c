@@ -55,7 +55,7 @@ _Static_assert(LG_EXTRA_SHIFT_MAX > 0, "LG_EXTRA_SHIFT_MAX must be positive");
 static int
 fast_log2_ratio(uint64_t a, uint64_t b, int clz_b)
 {
-    int clz_a = __builtin_clzll(a | 1);
+    int clz_a = sqisign_clz64(a | 1);
     uint64_t norm_a = (a << clz_a) >> 2;
     uint64_t norm_b = (b << clz_b) >> 2;
     uint64_t three_b = 3 * norm_b;
@@ -107,8 +107,8 @@ partial_gram_msb(uint64_t a, int64_t b, uint64_t c, int32_t matrix[2][2], uint64
         valid_mask &= ~ct_mask(2 * b_abs <= a);
 
         // 4. Local stopping condition
-        uint32_t clz_a = __builtin_clzll(a | 1);
-        uint32_t clz_c = __builtin_clzll(c | 1);
+        uint32_t clz_a = sqisign_clz64(a | 1);
+        uint32_t clz_c = sqisign_clz64(c | 1);
         valid_mask &= ~ct_mask((clz_a >= (64 - EXTRACT_W_PARAM + THRESHOLD_PARAM)) |
                                (clz_c >= (64 - EXTRACT_W_PARAM + THRESHOLD_PARAM)));
 

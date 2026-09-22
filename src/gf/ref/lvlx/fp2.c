@@ -221,7 +221,8 @@ fp2_half(fp2_t *x, const fp2_t *y)
 void
 fp2_batched_inv(fp2_t *x, int len)
 {
-    fp2_t t1[len], t2[len];
+    SQISIGN_VLA(fp2_t, t1, len);
+    SQISIGN_VLA(fp2_t, t2, len);
     fp2_t inverse;
 
     // x = x0,...,xn

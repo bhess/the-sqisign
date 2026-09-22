@@ -3,6 +3,7 @@
 // FPG_C < 2^31, odd.
 
 #include <fp_generic.h>
+#include <tutil.h>
 #include <string.h>
 
 #define N FPG_N
@@ -261,7 +262,7 @@ pow_ones(fpg_t *d, const fpg_t *a, int k)
 {
     fpg_t x = *a;
     int e = 1;
-    for (int i = 62 - __builtin_clzll((unsigned long long)k); i >= 0; i--) {
+    for (int i = 62 - sqisign_clz64((unsigned long long)k); i >= 0; i--) {
         fpg_t y = x;
         for (int j = 0; j < e; j++)
             fp_sqr(&y, &y);
@@ -288,7 +289,7 @@ fp_exp3div4(fpg_t *a)
     fpg_t Ma, z;
     fp_mul(&Ma, &M, &base); // a^(2^(T-2))
     z = Ma;
-    for (int i = 62 - __builtin_clzll((unsigned long long)(FPG_C - 1)); i >= 0; i--) {
+    for (int i = 62 - sqisign_clz64((unsigned long long)(FPG_C - 1)); i >= 0; i--) {
         fp_sqr(&z, &z);
         if (((FPG_C - 1) >> i) & 1)
             fp_mul(&z, &z, &Ma);

@@ -60,8 +60,8 @@ iso_isogeny_2chain_with_strategy(ec_curve_t *curve, const ec_point_t *kernel, co
         ++space;
 
     // Stack of remaining kernel points and their associated orders
-    ec_point_t splits[space];
-    uint16_t todo[space];
+    SQISIGN_VLA(ec_point_t, splits, space);
+    SQISIGN_VLA(uint16_t, todo, space);
     splits[0] = *kernel;
     todo[0] = isog_len;
 

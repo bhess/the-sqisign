@@ -299,7 +299,7 @@ modone_div(spint a[MODQLIMBS], const spint two_p[MODQLIMBS], int numwords, int a
      * Step 1. Left-shift two_p so that the MSB bit of its MS word is 1.
      */
     unsigned shift =
-        (unsigned)__builtin_clzll((unsigned long long)top) - (unsigned)(8 * sizeof(unsigned long long) - MODQRADIX);
+        (unsigned)sqisign_clz64((unsigned long long)top) - (unsigned)(8 * sizeof(unsigned long long) - MODQRADIX);
 
     assert(shift < MODQRADIX);
 
@@ -461,7 +461,7 @@ modqx_modone(spint a[MODQLIMBS], const spint two_p[MODQLIMBS], int numwords)
 
 // conditional move g to f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline))
+static void SQISIGN_NOINLINE
 modcmv(int b, const spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numwords)
 {
     assert(numwords <= MODQLIMBS);
@@ -483,7 +483,7 @@ modcmv(int b, const spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numword
 
 // conditional swap g and f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline))
+static void SQISIGN_NOINLINE
 modcsw(int b, volatile spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numwords)
 {
     assert(numwords <= MODQLIMBS);
@@ -564,6 +564,8 @@ modqx_modcipolla(const spint x[MODQLIMBS],
 {
     assert(numwords <= MODQLIMBS);
     assert(numwords > 0);
+    if (numwords <= 0 || numwords > MODQLIMBS)
+        return 0;
     spint e[MODQLIMBS] = { 0 };
     spint r0[MODQLIMBS], r1[MODQLIMBS] = { 0 }, tx[MODQLIMBS], ty[MODQLIMBS], w[MODQLIMBS];
     spint carry;

@@ -1,9 +1,9 @@
 {% macro fp_const(name, limbs, static=false, comment=none) -%}
 {% if comment %}// {{ comment }}
 {% endif %}
-{%- if static %}static {% endif %}const fp_t {{ name }} = {
+{%- if static %}static {% endif %}const fp_t {{ name }} = { {
     {{ limbs | map('hexlimb') | join(',\n    ') }}
-};
+} };
 {% endmacro -%}
 // clang-format off
 {{ core }}
