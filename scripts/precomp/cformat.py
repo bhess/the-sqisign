@@ -109,7 +109,7 @@ class Object:
                     literal += f"\n{obj._literal(sz)}"
                 return literal + "\n#endif\n"
             if isinstance(obj, FpEl):
-                literal = "\n#if 0"
+                literal = "{\n#if 0"
                 for sz in (16, 32, 64):
                     literal += f"\n#elif RADIX == {sz}"
                     if sz in (32, 64):
@@ -123,7 +123,7 @@ class Object:
                         literal += "\n#endif"
                     else:
                         literal += f"\n{obj._literal(sz, 'ref')}"
-                return literal + "\n#endif\n"
+                return literal + "\n#endif\n}"
             if isinstance(obj, list) or isinstance(obj, tuple):
                 return '{' + ', '.join(map(rec, obj)) + '}'
             if isinstance(obj, str):
