@@ -32,8 +32,8 @@ partial_xgcd_msb(uint64_t a, uint64_t b, uint64_t sqrta, int32_t matrix[2][2], u
         valid_mask &= ~ct_mask(b < sqrta);
 
         // 4. Local stopping condition
-        uint32_t lza = __builtin_clzll(a | 1);
-        uint32_t lzb = __builtin_clzll(b | 1);
+        uint32_t lza = sqisign_clz64(a | 1);
+        uint32_t lzb = sqisign_clz64(b | 1);
         valid_mask &= ~ct_mask((lza > DIM2_THRESHOLD) | (lzb > DIM2_THRESHOLD));
 
         // 5. Shift calculation
@@ -185,7 +185,7 @@ partial_xgcd_lehmer(ibz_t *AA, ibz_t *BB, ibz_t *CC, ibz_t *DD, int outer_iters,
 static int32_t
 sizered_msb(uint64_t a, uint64_t b, int64_t c, int64_t d)
 {
-    int32_t v1_shift = ct_min((int32_t)__builtin_clzll(b | 1) - 1, (int32_t)__builtin_clrsbll(d | 1));
+    int32_t v1_shift = ct_min((int32_t)sqisign_clz64(b | 1) - 1, (int32_t)sqisign_clrsb64(d | 1));
     int64_t b_shifted = (int64_t)(b << v1_shift);
     int64_t d_shifted = (int64_t)((uint64_t)d << v1_shift);
     int64_t num = (ct_mul_high(a, b_shifted) >> 1) + (ct_mul_high(c, d_shifted) >> 1);

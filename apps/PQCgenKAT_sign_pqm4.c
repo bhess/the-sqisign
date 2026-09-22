@@ -100,8 +100,7 @@ void output_rng(FILE *fp) {
   fputs(rng, fp);
 }
 
-// Wrappers adapting the scheme's sqisign_* functions (unsigned long long lengths, NIST convention)
-// to pqm4's crypto_sign_* API (size_t lengths)
+// Wrappers adapting the scheme's sqisign_* functions to pqm4's crypto_sign_* API
 void output_implementation(FILE *fp) {
   const char api[] =
     "// SPDX-License-Identifier: Apache-2.0\n"
@@ -125,20 +124,20 @@ void output_implementation(FILE *fp) {
     "\n"
     "int crypto_sign(unsigned char *sm, size_t *smlen, const unsigned char *m,\n"
     "                size_t mlen, const unsigned char *sk) {\n"
-    "  unsigned long long smlen_ull = 0;\n"
-    "  int ret = sqisign_sign(sm, &smlen_ull, m, mlen, sk);\n"
+    "  size_t smlen_tmp = 0;\n"
+    "  int ret = sqisign_sign(sm, &smlen_tmp, m, mlen, sk);\n"
     "  if (smlen) {\n"
-    "    *smlen = smlen_ull;\n"
+    "    *smlen = smlen_tmp;\n"
     "  }\n"
     "  return ret;\n"
     "}\n"
     "\n"
     "int crypto_sign_open(unsigned char *m, size_t *mlen, const unsigned char *sm,\n"
     "                     size_t smlen, const unsigned char *pk) {\n"
-    "  unsigned long long mlen_ull = 0;\n"
-    "  int ret = sqisign_open(m, &mlen_ull, sm, smlen, pk);\n"
+    "  size_t mlen_tmp = 0;\n"
+    "  int ret = sqisign_open(m, &mlen_tmp, sm, smlen, pk);\n"
     "  if (mlen) {\n"
-    "    *mlen = mlen_ull;\n"
+    "    *mlen = mlen_tmp;\n"
     "  }\n"
     "  return ret;\n"
     "}\n";
@@ -154,7 +153,7 @@ int main(int argc, char **argv) {
   const unsigned char m[MSG_LEN] = { 0 };
   unsigned char sm[MSG_LEN + CRYPTO_BYTES];
   unsigned char m1[MSG_LEN];
-  unsigned long long smlen, mlen1;
+  size_t smlen, mlen1;
   unsigned char pk[CRYPTO_PUBLICKEYBYTES], sk[CRYPTO_SECRETKEYBYTES];
   int ret_val;
 
@@ -189,7 +188,7 @@ int main(int argc, char **argv) {
   }
 
   if (mlen1 != MSG_LEN) {
-    printf("crypto_sign_open returned bad 'mlen': Got <%llu>, expected <%d>\n", mlen1, MSG_LEN);
+    printf("crypto_sign_open returned bad 'mlen': Got <%zu>, expected <%d>\n", mlen1, MSG_LEN);
     return KAT_CRYPTO_FAILURE;
   }
 

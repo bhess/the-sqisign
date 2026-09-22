@@ -7,7 +7,7 @@ commons:
     folder_name: .
     sources: ./src/gf/ref/include/fp.h ./src/gf/ref/include/fp2.h ./src/gf/ref/lvlx/fp.c ./src/gf/ref/lvlx/fp2.c
     include_only: true
-  - name: sqisign_common_broadwell
+  - name: sqisign_common_sat64
     folder_name: .
     sources: ./src/gf/sat64/include/asm_preamble.h ./src/gf/sat64/include/fp2x.h ./src/gf/sat64/include/fp_generic.h ./src/gf/sat64/lvlx/fp2.c ./src/gf/sat64/lvlx/fp_generic.c
     include_only: true

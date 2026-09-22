@@ -564,7 +564,7 @@ static int modqr(const spint *h, const spint *x) {
 
 // conditional swap g and f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline)) modcsw(int b, volatile spint *g,
+static void SQISIGN_NOINLINE modcsw(int b, volatile spint *g,
                                              volatile spint *f) {
   int i;
   spint c0, c1, s, t, w, v, aux;
@@ -642,7 +642,7 @@ static int modcmp(const spint *a, const spint *b) {
 
 #include <fp.h>
 
-const fp_t ZERO = {
+const fp_t ZERO = { {
     0x0,
     0x0,
     0x0,
@@ -652,9 +652,9 @@ const fp_t ZERO = {
     0x0,
     0x0,
     0x0
-};
+} };
 
-const fp_t ONE = {
+const fp_t ONE = { {
     0x12f,
     0x0,
     0x0,
@@ -664,10 +664,10 @@ const fp_t ONE = {
     0x0,
     0x0,
     0xb00000000000
-};
+} };
 
 // Montgomery representation of 2^-1
-static const fp_t TWO_INV = {
+static const fp_t TWO_INV = { {
     0x97,
     0x0,
     0x0,
@@ -677,10 +677,10 @@ static const fp_t TWO_INV = {
     0x0,
     0x0,
     0x1300000000000
-};
+} };
 
 // Montgomery representation of 3^-1
-static const fp_t THREE_INV = {
+static const fp_t THREE_INV = { {
     0xaaaaaaaaaaab0f,
     0x155555555555555,
     0xaaaaaaaaaaaaaa,
@@ -690,7 +690,7 @@ static const fp_t THREE_INV = {
     0xaaaaaaaaaaaaaa,
     0x155555555555555,
     0x15aaaaaaaaaaa
-};
+} };
 
 void
 fp_set_small(fp_t *x, const digit_t val)

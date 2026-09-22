@@ -45,18 +45,18 @@ principal-submitters:
   - Wessel van Woerden
 implementations:
   - name: ref
-    version: round2
+    version: round3
     folder_name: .
-    compile_opts: '-DSQISIGN_BUILD_TYPE_REF=ON -DSQISIGN_VARIANT=p500_27 -DSQISIGN_GF_IMPL_REF=ON -DENABLE_SIGN=ON -DSQISIGN_NAMESPACE_GENERIC_AS_VARIANT=1 -Wno-missing-braces -fno-strict-aliasing'
+    compile_opts: '-DSQISIGN_BUILD_TYPE_REF=ON -DSQISIGN_VARIANT=p500_27 -DSQISIGN_GF_IMPL_REF=ON -DENABLE_SIGN=ON -DSQISIGN_NAMESPACE_GENERIC_AS_VARIANT=1 $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-strict-aliasing>'
     signature_keypair: sqisign_p500_27_ref_crypto_sign_keypair
     signature_signature: sqisign_p500_27_ref_crypto_sign_signature
     signature_verify: sqisign_p500_27_ref_crypto_sign_verify
     sources: ./src/precomp/ref/p500_27/e0_basis.c ./src/precomp/ref/p500_27/ec_params.c ./src/precomp/ref/p500_27/endomorphism_action.c ./src/precomp/ref/p500_27/quaternion_data.c ./src/precomp/ref/p500_27/torsion_constants.c ./src/precomp/ref/p500_27/include/e0_basis.h ./src/precomp/ref/p500_27/include/ec_params.h ./src/precomp/ref/p500_27/include/encoded_sizes.h ./src/precomp/ref/p500_27/include/endomorphism_action.h ./src/precomp/ref/p500_27/include/fp_constants.h ./src/precomp/ref/p500_27/include/quaternion_constants.h ./src/precomp/ref/p500_27/include/quaternion_data.h ./src/precomp/ref/p500_27/include/torsion_constants.h ./src/precomp/ref/p500_27/sqisign_parameters.txt ./src/gf/ref/p500_27/fp_p500_27.c ./src/gf/ref/p500_27/fp_p500_27_32.inc ./src/gf/ref/p500_27/fp_p500_27_64.inc ./src/nistapi/p500_27/api.c ./src/nistapi/p500_27/api.h
     common_dep: sqisign_common sqisign_common_ref
   - name: broadwell
-    version: round2
+    version: round3
     folder_name: .
-    compile_opts: '-DSQISIGN_BUILD_TYPE_BROADWELL=ON -DSQISIGN_VARIANT=p500_27 -DSQISIGN_GF_IMPL_SAT64 -DENABLE_SIGN=ON -DSQISIGN_NAMESPACE_GENERIC_AS_VARIANT=1 -DRADIX_64 -Wno-missing-braces -fno-strict-aliasing'
+    compile_opts: '-DSQISIGN_BUILD_TYPE_BROADWELL=ON -DSQISIGN_VARIANT=p500_27 -DSQISIGN_GF_IMPL_SAT64 -DENABLE_SIGN=ON -DSQISIGN_NAMESPACE_GENERIC_AS_VARIANT=1 -DRADIX_64 $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-strict-aliasing>'
     signature_keypair: sqisign_p500_27_broadwell_crypto_sign_keypair
     signature_signature: sqisign_p500_27_broadwell_crypto_sign_signature
     signature_verify: sqisign_p500_27_broadwell_crypto_sign_verify
@@ -70,4 +70,19 @@ implementations:
           - bmi2
           - adx
     sources: ./src/precomp/ref/p500_27/e0_basis.c ./src/precomp/ref/p500_27/ec_params.c ./src/precomp/ref/p500_27/endomorphism_action.c ./src/precomp/ref/p500_27/quaternion_data.c ./src/precomp/ref/p500_27/torsion_constants.c ./src/precomp/ref/p500_27/include/e0_basis.h ./src/precomp/ref/p500_27/include/ec_params.h ./src/precomp/ref/p500_27/include/encoded_sizes.h ./src/precomp/ref/p500_27/include/endomorphism_action.h ./src/precomp/ref/p500_27/include/fp_constants.h ./src/precomp/ref/p500_27/include/quaternion_constants.h ./src/precomp/ref/p500_27/include/quaternion_data.h ./src/precomp/ref/p500_27/include/torsion_constants.h ./src/precomp/ref/p500_27/sqisign_parameters.txt ./src/gf/sat64/p500_27/fp.c ./src/gf/broadwell/p500_27/fp_asm.S ./src/gf/sat64/p500_27/include/fp.h ./src/gf/sat64/p500_27/include/fp2.h ./src/gf/sat64/p500_27/include/fp_generic_params.h ./src/nistapi/p500_27/api.c ./src/nistapi/p500_27/api.h
-    common_dep: sqisign_common sqisign_common_broadwell
+    common_dep: sqisign_common sqisign_common_sat64
+  - name: arm64
+    version: round3
+    folder_name: .
+    compile_opts: '-DSQISIGN_BUILD_TYPE_ARM64=ON -DSQISIGN_VARIANT=p500_27 -DSQISIGN_GF_IMPL_SAT64 -DSQISIGN_FP2_FUSED_ASM -DENABLE_SIGN=ON -DSQISIGN_NAMESPACE_GENERIC_AS_VARIANT=1 -DRADIX_64 $<$<C_COMPILER_ID:GNU,Clang,AppleClang>:-fno-strict-aliasing>'
+    signature_keypair: sqisign_p500_27_arm64_crypto_sign_keypair
+    signature_signature: sqisign_p500_27_arm64_crypto_sign_signature
+    signature_verify: sqisign_p500_27_arm64_crypto_sign_verify
+    supported_platforms:
+      - architecture: arm_8
+        operating_systems:
+          - Linux
+          - Darwin
+        required_flags: [] # Scalar AArch64; no optional ISA extensions.
+    sources: ./src/precomp/ref/p500_27/e0_basis.c ./src/precomp/ref/p500_27/ec_params.c ./src/precomp/ref/p500_27/endomorphism_action.c ./src/precomp/ref/p500_27/quaternion_data.c ./src/precomp/ref/p500_27/torsion_constants.c ./src/precomp/ref/p500_27/include/e0_basis.h ./src/precomp/ref/p500_27/include/ec_params.h ./src/precomp/ref/p500_27/include/encoded_sizes.h ./src/precomp/ref/p500_27/include/endomorphism_action.h ./src/precomp/ref/p500_27/include/fp_constants.h ./src/precomp/ref/p500_27/include/quaternion_constants.h ./src/precomp/ref/p500_27/include/quaternion_data.h ./src/precomp/ref/p500_27/include/torsion_constants.h ./src/precomp/ref/p500_27/sqisign_parameters.txt ./src/gf/sat64/p500_27/fp.c ./src/gf/arm64/p500_27/fp_asm.S ./src/gf/sat64/p500_27/include/fp.h ./src/gf/sat64/p500_27/include/fp2.h ./src/gf/sat64/p500_27/include/fp_generic_params.h ./src/nistapi/p500_27/api.c ./src/nistapi/p500_27/api.h
+    common_dep: sqisign_common sqisign_common_sat64

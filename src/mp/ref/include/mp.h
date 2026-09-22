@@ -25,7 +25,7 @@ typedef struct prng_domain_ctx prng_domain_ctx_t;
 #define MAXB(a, b) ((a) > (b) ? (a) : (b))
 
 /* floor(log2(x)) for x > 0. */
-#define LOG2(x) (63 - __builtin_clzll((unsigned long long)(x)))
+#define LOG2(x) (63 - sqisign_clz64((unsigned long long)(x)))
 
 /* The full width of an ibz_t, in bits: no value may exceed this. */
 #define IBZ_MAX_BITS (IBZ_NLIMBS * NUM_BITS_LIMB)

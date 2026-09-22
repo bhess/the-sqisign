@@ -22,8 +22,8 @@ example_sqisign(int iter)
 {
     int ret = 0;
 
-    unsigned long long msglen = 64;
-    unsigned long long smlen = CRYPTO_BYTES + msglen;
+    size_t msglen = 64;
+    size_t smlen = CRYPTO_BYTES + msglen;
 
     unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
     unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);

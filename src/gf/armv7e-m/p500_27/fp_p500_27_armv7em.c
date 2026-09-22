@@ -34,7 +34,7 @@
 
 #include <fp.h>
 
-const fp_t ZERO = {
+const fp_t ZERO = { {
     0x0,
     0x0,
     0x0,
@@ -51,9 +51,9 @@ const fp_t ZERO = {
     0x0,
     0x0,
     0x0
-};
+} };
 
-const fp_t ONE = {
+const fp_t ONE = { {
     0x97,
     0x0,
     0x0,
@@ -70,10 +70,10 @@ const fp_t ONE = {
     0x0,
     0x0,
     0x1300000
-};
+} };
 
 // Montgomery representation of 2^-1
-static const fp_t TWO_INV = {
+static const fp_t TWO_INV = { {
     0x4b,
     0x0,
     0x0,
@@ -90,10 +90,10 @@ static const fp_t TWO_INV = {
     0x0,
     0x0,
     0x1700000
-};
+} };
 
 // Montgomery representation of 3^-1
-static const fp_t THREE_INV = {
+static const fp_t THREE_INV = { {
     0x55555587,
     0x55555555,
     0x55555555,
@@ -110,7 +110,7 @@ static const fp_t THREE_INV = {
     0x55555555,
     0x55555555,
     0x1855555
-};
+} };
 
 void
 fp_set_small(fp_t *x, const digit_t val)

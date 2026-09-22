@@ -3,6 +3,7 @@
 #ifndef SQISIGN_H
 #define SQISIGN_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <sqisign_namespace.h>
 
@@ -38,11 +39,7 @@ int sqisign_keypair(unsigned char *pk, unsigned char *sk);
  * @return 0 if success, -1 otherwise
  */
 SQISIGN_API
-int sqisign_sign(unsigned char *sm,
-                 unsigned long long *smlen,
-                 const unsigned char *m,
-                 unsigned long long mlen,
-                 const unsigned char *sk);
+int sqisign_sign(unsigned char *sm, size_t *smlen, const unsigned char *m, size_t mlen, const unsigned char *sk);
 
 /**
  * SQIsign signature generation (signature only).
@@ -62,9 +59,9 @@ int sqisign_sign(unsigned char *sm,
  */
 SQISIGN_API
 int sqisign_sign_signature(unsigned char *sig,
-                           unsigned long long *siglen,
+                           size_t *siglen,
                            const unsigned char *m,
-                           unsigned long long mlen,
+                           size_t mlen,
                            const unsigned char *sk);
 #endif
 
@@ -86,11 +83,7 @@ int sqisign_sign_signature(unsigned char *sig,
  * @return 0 if verification succeeded, -1 otherwise
  */
 SQISIGN_API
-int sqisign_open(unsigned char *m,
-                 unsigned long long *mlen,
-                 const unsigned char *sm,
-                 unsigned long long smlen,
-                 const unsigned char *pk);
+int sqisign_open(unsigned char *m, size_t *mlen, const unsigned char *sm, size_t smlen, const unsigned char *pk);
 
 /**
  * SQIsign verify detached signature.
@@ -106,9 +99,9 @@ int sqisign_open(unsigned char *m,
  */
 SQISIGN_API
 int sqisign_verify(const unsigned char *sig,
-                   unsigned long long siglen,
+                   size_t siglen,
                    const unsigned char *m,
-                   unsigned long long mlen,
+                   size_t mlen,
                    const unsigned char *pk);
 
 #endif
