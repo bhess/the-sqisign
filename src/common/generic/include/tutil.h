@@ -4,6 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(_MSC_VER)
+#define SQISIGN_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define SQISIGN_NOINLINE __attribute__((noinline))
+#else
+#define SQISIGN_NOINLINE
+#endif
+
 #if defined(__GNUC__) || defined(__clang__)
 #define BSWAP16(i) __builtin_bswap16((i))
 #define BSWAP32(i) __builtin_bswap32((i))

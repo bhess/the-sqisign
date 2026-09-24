@@ -221,6 +221,7 @@ def make_field_file(monty_text, p, base, N, nbytes):
     `nbytes`   = modarith byte length ceil(logp/8): the meaningful bytes.
     """
     core = monty_text.lstrip("\n")
+    core = core.replace("__attribute__((noinline))", "SQISIGN_NOINLINE")
     # ISO-C / -Wpedantic compatibility: avoid a bare __uint128_t/__int128_t
     # #define, mirroring the hand-edit in the committed lvlN field files.
     core = core.replace(

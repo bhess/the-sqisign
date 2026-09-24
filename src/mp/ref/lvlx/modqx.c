@@ -461,7 +461,7 @@ modqx_modone(spint a[MODQLIMBS], const spint two_p[MODQLIMBS], int numwords)
 
 // conditional move g to f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline))
+static void SQISIGN_NOINLINE
 modcmv(int b, const spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numwords)
 {
     assert(numwords <= MODQLIMBS);
@@ -483,7 +483,7 @@ modcmv(int b, const spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numword
 
 // conditional swap g and f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline))
+static void SQISIGN_NOINLINE
 modcsw(int b, volatile spint g[MODQLIMBS], volatile spint f[MODQLIMBS], int numwords)
 {
     assert(numwords <= MODQLIMBS);

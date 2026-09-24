@@ -1085,7 +1085,7 @@ static int modqr(const spint *h, const spint *x) {
 
 // conditional swap g and f if d=1
 // strongly recommend inlining be disabled using compiler specific syntax
-static void __attribute__((noinline)) modcsw(int b, volatile spint *g,
+static void SQISIGN_NOINLINE modcsw(int b, volatile spint *g,
                                              volatile spint *f) {
   int i;
   spint c0, c1, s, t, w, v, aux;
