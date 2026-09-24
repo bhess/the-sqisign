@@ -5,6 +5,42 @@
 #include <stdint.h>
 
 #if defined(_MSC_VER)
+#include <intrin.h>
+#endif
+
+// Count leading zeros in a nonzero 64-bit word.
+static inline int
+sqisign_clz64(uint64_t x)
+{
+#if defined(_MSC_VER)
+    unsigned long index;
+#if defined(_M_X64) || defined(_M_ARM64)
+    _BitScanReverse64(&index, x);
+    return 63 - (int)index;
+#else
+    if (_BitScanReverse(&index, (unsigned long)(x >> 32)))
+        return 31 - (int)index;
+    _BitScanReverse(&index, (unsigned long)x);
+    return 63 - (int)index;
+#endif
+#else
+    return __builtin_clzll(x);
+#endif
+}
+
+static inline int
+sqisign_clrsb64(int64_t x)
+{
+#if defined(_MSC_VER)
+    uint64_t u = (uint64_t)x;
+    u ^= 0 - (u >> 63);
+    return sqisign_clz64((u << 1) | 1);
+#else
+    return __builtin_clrsbll(x);
+#endif
+}
+
+#if defined(_MSC_VER)
 #define SQISIGN_NOINLINE __declspec(noinline)
 #elif defined(__GNUC__) || defined(__clang__)
 #define SQISIGN_NOINLINE __attribute__((noinline))

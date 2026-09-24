@@ -83,7 +83,7 @@ static inline size_t
 ct_limb_bit_length(digit_t x)
 {
     unsigned long long safe_x = (unsigned long long)x | 1;
-    size_t leading_zeros = __builtin_clzll(safe_x);
+    size_t leading_zeros = sqisign_clz64(safe_x);
     size_t len = 64 - leading_zeros;
     digit_t nonzero_mask = ct_barrier_digit((digit_t)(-((digit_t)(x != 0))));
     return len & nonzero_mask;

@@ -299,7 +299,7 @@ modone_div(spint a[MODQLIMBS], const spint two_p[MODQLIMBS], int numwords, int a
      * Step 1. Left-shift two_p so that the MSB bit of its MS word is 1.
      */
     unsigned shift =
-        (unsigned)__builtin_clzll((unsigned long long)top) - (unsigned)(8 * sizeof(unsigned long long) - MODQRADIX);
+        (unsigned)sqisign_clz64((unsigned long long)top) - (unsigned)(8 * sizeof(unsigned long long) - MODQRADIX);
 
     assert(shift < MODQRADIX);
 

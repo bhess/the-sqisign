@@ -134,8 +134,8 @@ ct_apply_matrix_gaussian(ct_complex_t *A,
 static int
 ceil_log2_diff_u64(uint64_t a, uint64_t b)
 {
-    int clz_a = __builtin_clzll(a | 1);
-    int clz_b = __builtin_clzll(b | 1);
+    int clz_a = sqisign_clz64(a | 1);
+    int clz_b = sqisign_clz64(b | 1);
     int d = clz_b - clz_a;
     uint32_t sign_bit = (uint32_t)d >> 31;
     uint32_t mask_neg = ct_barrier_u32(0U - sign_bit);
@@ -184,10 +184,10 @@ LG_gaussian_inner(i64_complex_t a,
     uint64_t global_swap_mask = ct_mask(swap);
     for (int i = 0; i < DIM2I_INNER_ITS; i++) {
         // 1. Local stopping condition
-        uint32_t clz_a = __builtin_clzll(ct_abs64(a.re) | ct_abs64(a.im) | 1);
-        uint32_t clz_b = __builtin_clzll(ct_abs64(b.re) | ct_abs64(b.im) | 1);
-        uint32_t clz_c = __builtin_clzll(ct_abs64(c.re) | ct_abs64(c.im) | 1);
-        uint32_t clz_d = __builtin_clzll(ct_abs64(d.re) | ct_abs64(d.im) | 1);
+        uint32_t clz_a = sqisign_clz64(ct_abs64(a.re) | ct_abs64(a.im) | 1);
+        uint32_t clz_b = sqisign_clz64(ct_abs64(b.re) | ct_abs64(b.im) | 1);
+        uint32_t clz_c = sqisign_clz64(ct_abs64(c.re) | ct_abs64(c.im) | 1);
+        uint32_t clz_d = sqisign_clz64(ct_abs64(d.re) | ct_abs64(d.im) | 1);
         int32_t base_shift_v1 = ct_max0((int32_t)ct_min_u32(clz_a, clz_c) - DIM2I_UP_SHIFT);
         int32_t base_shift_v2 = ct_max0((int32_t)ct_min_u32(clz_b, clz_d) - DIM2I_UP_SHIFT);
         uint64_t stop_v1 = ct_mask(base_shift_v1 > (int32_t)(DIM2I_THRESHOLD + (64 - DIM2I_UP_SHIFT - DIM2I_W))) &
