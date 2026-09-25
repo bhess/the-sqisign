@@ -34,7 +34,7 @@ bench(size_t runs)
             abort();
     }
 
-    unsigned long long len;
+    size_t len;
 
     printf("%s (%zu iterations)\n", CRYPTO_ALGNAME, runs);
 

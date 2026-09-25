@@ -20,14 +20,14 @@
 #include <ct_testing.h>
 
 static int
-test_ct(unsigned long long msglen)
+test_ct(size_t msglen)
 {
     unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);
     unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
     unsigned char *sig = calloc(CRYPTO_BYTES + msglen, 1);
     unsigned char *msg = malloc(msglen);
 
-    unsigned long long smlen = CRYPTO_BYTES + msglen;
+    size_t smlen = CRYPTO_BYTES + msglen;
     int res;
 
     randombytes(msg, msglen);
@@ -58,7 +58,7 @@ main(int argc, char *argv[])
     int seed_set = 0;
     int msglen_set = 0;
     int res = 0;
-    unsigned long long msglen = 32;
+    size_t msglen = 32;
 
     for (int i = 1; i < argc; i++) {
         unsigned int _msglen;
@@ -74,7 +74,7 @@ main(int argc, char *argv[])
         }
 
         if (!msglen_set && sscanf(argv[i], "--msglen=%u", &_msglen) == 1) {
-            msglen = (unsigned long long)_msglen;
+            msglen = (size_t)_msglen;
             msglen_set = 1;
         }
     }

@@ -34,16 +34,13 @@ print_hex(const unsigned char *hex, int len)
 //  - sig is a valid signature over msg. Were it corrupted, every call below would return -1 simply because the
 //    signature does not verify, and the length checks could be deleted without a single test failing.
 static int
-test_invalid_lengths(const unsigned char *sig,
-                     const unsigned char *msg,
-                     unsigned long long in_msglen,
-                     const unsigned char *pk)
+test_invalid_lengths(const unsigned char *sig, const unsigned char *msg, size_t in_msglen, const unsigned char *pk)
 {
     // Suffix lengths tried on the oversized cases
-    static const unsigned long long suffixes[] = { 1, 16 };
+    static const size_t suffixes[] = { 1, 16 };
 
     int res = 0;
-    unsigned long long mlen;
+    size_t mlen;
     unsigned char *sm = NULL;
     unsigned char *sig_trunc = NULL;
     unsigned char *msg_out = NULL;
@@ -65,7 +62,7 @@ test_invalid_lengths(const unsigned char *sig,
         goto err;
     }
 
-    for (unsigned long long len = 0; len < (unsigned long long)CRYPTO_BYTES; len++) {
+    for (size_t len = 0; len < (size_t)CRYPTO_BYTES; len++) {
         // Undersized detached signature: must be rejected before sig is read.
         sig_trunc = malloc(len ? len : 1);
         if (!sig_trunc) {
@@ -75,7 +72,7 @@ test_invalid_lengths(const unsigned char *sig,
         memcpy(sig_trunc, sig, len);
 
         if (crypto_sign_verify(sig_trunc, len, msg, in_msglen, pk) != -1) {
-            printf("crypto_sign_verify accepted an undersized signature, siglen=%llu\n", len);
+            printf("crypto_sign_verify accepted an undersized signature, siglen=%zu\n", len);
             res = -1;
             goto err;
         }
@@ -90,7 +87,7 @@ test_invalid_lengths(const unsigned char *sig,
         mlen = in_msglen ? in_msglen : 1; // deliberately non-zero
 
         if (crypto_sign_open(msg_out, &mlen, sig_trunc, len, pk) != -1 || mlen != 0) {
-            printf("crypto_sign_open accepted an undersized signed message, smlen=%llu\n", len);
+            printf("crypto_sign_open accepted an undersized signed message, smlen=%zu\n", len);
             res = -1;
             goto err;
         }
@@ -105,8 +102,8 @@ test_invalid_lengths(const unsigned char *sig,
     // rejected rather than accepted with the suffix ignored. Both a random and an all-zero suffix are tried, the latter
     // being the most benign-looking choice available to a caller.
     for (size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-        unsigned long long extra = suffixes[i];
-        unsigned long long len = (unsigned long long)CRYPTO_BYTES + extra;
+        size_t extra = suffixes[i];
+        size_t len = (size_t)CRYPTO_BYTES + extra;
 
         sig_trunc = malloc(len);
         if (!sig_trunc) {
@@ -117,14 +114,14 @@ test_invalid_lengths(const unsigned char *sig,
         randombytes(sig_trunc + CRYPTO_BYTES, extra);
 
         if (crypto_sign_verify(sig_trunc, len, msg, in_msglen, pk) != -1) {
-            printf("crypto_sign_verify accepted a signature with a random suffix, siglen=%llu\n", len);
+            printf("crypto_sign_verify accepted a signature with a random suffix, siglen=%zu\n", len);
             res = -1;
             goto err;
         }
 
         memset(sig_trunc + CRYPTO_BYTES, 0, extra);
         if (crypto_sign_verify(sig_trunc, len, msg, in_msglen, pk) != -1) {
-            printf("crypto_sign_verify accepted a signature with a zero suffix, siglen=%llu\n", len);
+            printf("crypto_sign_verify accepted a signature with a zero suffix, siglen=%zu\n", len);
             res = -1;
             goto err;
         }
@@ -161,8 +158,8 @@ test_invalid_lengths(const unsigned char *sig,
     // fail as a signature over a different message. msg_out is sized exactly to smlen - CRYPTO_BYTES, which the failure
     // path zeroes.
     for (size_t i = 0; i < sizeof(suffixes) / sizeof(suffixes[0]); i++) {
-        unsigned long long extra = suffixes[i];
-        unsigned long long len = (unsigned long long)CRYPTO_BYTES + in_msglen + extra;
+        size_t extra = suffixes[i];
+        size_t len = (size_t)CRYPTO_BYTES + in_msglen + extra;
 
         sig_trunc = malloc(len);
         msg_out = malloc(len - CRYPTO_BYTES);
@@ -175,7 +172,7 @@ test_invalid_lengths(const unsigned char *sig,
         mlen = 0;
 
         if (crypto_sign_open(msg_out, &mlen, sig_trunc, len, pk) != -1 || mlen != 0) {
-            printf("crypto_sign_open accepted a signed message with a suffix, smlen=%llu\n", len);
+            printf("crypto_sign_open accepted a signed message with a suffix, smlen=%zu\n", len);
             res = -1;
             goto err;
         }
@@ -194,7 +191,7 @@ err:
 }
 
 static int
-test_sqisign(unsigned long long in_msglen)
+test_sqisign(size_t in_msglen)
 {
     unsigned char *pk = calloc(CRYPTO_PUBLICKEYBYTES, 1);
     unsigned char *sk = calloc(CRYPTO_SECRETKEYBYTES, 1);
@@ -203,7 +200,7 @@ test_sqisign(unsigned long long in_msglen)
     unsigned char *msg = malloc(in_msglen);
     unsigned char *msg_open = malloc(in_msglen);
 
-    unsigned long long msglen = in_msglen;
+    size_t msglen = in_msglen;
 
     randombytes(msg, in_msglen);
     randombytes(msg_open, in_msglen);
@@ -216,7 +213,7 @@ test_sqisign(unsigned long long in_msglen)
         goto err;
     }
 
-    unsigned long long smlen = CRYPTO_BYTES + in_msglen;
+    size_t smlen = CRYPTO_BYTES + in_msglen;
 
     res = crypto_sign(sig, &smlen, msg, in_msglen, sk);
     if (res != 0) {
@@ -268,7 +265,7 @@ test_sqisign(unsigned long long in_msglen)
     // Test detached signature API
     randombytes(msg, in_msglen);
 
-    unsigned long long siglen = CRYPTO_BYTES;
+    size_t siglen = CRYPTO_BYTES;
     res = crypto_sign_signature(sig, &siglen, msg, in_msglen, sk);
     if (res != 0 || siglen != CRYPTO_BYTES) {
         res = -1;
@@ -313,7 +310,7 @@ main(int argc, char *argv[])
     int seed_set = 0;
     int msglen_set = 0;
     int res = 0;
-    unsigned long long msglen = 32;
+    size_t msglen = 32;
 
     for (int i = 1; i < argc; i++) {
         unsigned int _msglen;
@@ -329,7 +326,7 @@ main(int argc, char *argv[])
         }
 
         if (!msglen_set && sscanf(argv[i], "--msglen=%u", &_msglen) == 1) {
-            msglen = (unsigned long long)_msglen;
+            msglen = (size_t)_msglen;
             msglen_set = 1;
         }
     }

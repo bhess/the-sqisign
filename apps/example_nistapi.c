@@ -48,8 +48,8 @@ dump_bytes(char const *name, unsigned char const *bytes, size_t len)
 static int
 example_sqisign(int dump)
 {
-    unsigned long long msglen = rand_u32() % 100;
-    unsigned long long smlen = CRYPTO_BYTES + msglen;
+    size_t msglen = rand_u32() % 100;
+    size_t smlen = CRYPTO_BYTES + msglen;
 
     // msglen doubles as an out-parameter of crypto_sign_open below,
     // so it stops describing the buffers after the first one is called.

@@ -25,11 +25,7 @@ sqisign_keypair(unsigned char *pk, unsigned char *sk)
 
 SQISIGN_API
 int
-sqisign_sign_signature(unsigned char *sig,
-                       unsigned long long *siglen,
-                       const unsigned char *m,
-                       unsigned long long mlen,
-                       const unsigned char *sk)
+sqisign_sign_signature(unsigned char *sig, size_t *siglen, const unsigned char *m, size_t mlen, const unsigned char *sk)
 {
     int ret = 0;
     secret_key_t skt;
@@ -53,11 +49,7 @@ sqisign_sign_signature(unsigned char *sig,
 
 SQISIGN_API
 int
-sqisign_sign(unsigned char *sm,
-             unsigned long long *smlen,
-             const unsigned char *m,
-             unsigned long long mlen,
-             const unsigned char *sk)
+sqisign_sign(unsigned char *sm, size_t *smlen, const unsigned char *m, size_t mlen, const unsigned char *sk)
 {
     int ret = 0;
 
@@ -77,11 +69,7 @@ sqisign_sign(unsigned char *sm,
 
 SQISIGN_API
 int
-sqisign_open(unsigned char *m,
-             unsigned long long *mlen,
-             const unsigned char *sm,
-             unsigned long long smlen,
-             const unsigned char *pk)
+sqisign_open(unsigned char *m, size_t *mlen, const unsigned char *sm, size_t smlen, const unsigned char *pk)
 {
     int ret = 0;
     public_key_t pkt = { 0 };
@@ -110,11 +98,7 @@ sqisign_open(unsigned char *m,
 
 SQISIGN_API
 int
-sqisign_verify(const unsigned char *sig,
-               unsigned long long siglen,
-               const unsigned char *m,
-               unsigned long long mlen,
-               const unsigned char *pk)
+sqisign_verify(const unsigned char *sig, size_t siglen, const unsigned char *m, size_t mlen, const unsigned char *pk)
 {
     int ret = 0;
     public_key_t pkt = { 0 };

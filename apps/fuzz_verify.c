@@ -71,7 +71,7 @@ verify_signature(const testcase_t corpus[], int testcases)
 {
     unsigned char pk[CRYPTO_PUBLICKEYBYTES];
     unsigned char staging[SM_MAX];
-    unsigned long long msglen = 0;
+    size_t msglen = 0;
 
     // AFL rewinds the fd between persistent-mode iterations, but not our stdio buffer.
     (void)fseek(stdin, 0, SEEK_SET);
@@ -109,7 +109,7 @@ verify_signature(const testcase_t corpus[], int testcases)
         crash();
 
     // An accepted signature must recover exactly the bytes appended to the signature.
-    if (accepted && (msglen != (unsigned long long)msgmax || memcmp(msg, sm + SIGNATURE_BYTES, msgmax) != 0))
+    if (accepted && (msglen != (size_t)msgmax || memcmp(msg, sm + SIGNATURE_BYTES, msgmax) != 0))
         crash();
 
     // The corpus holds known-good inputs, so acceptance must coincide with corpus membership. The length, the key and
