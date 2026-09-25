@@ -564,6 +564,8 @@ modqx_modcipolla(const spint x[MODQLIMBS],
 {
     assert(numwords <= MODQLIMBS);
     assert(numwords > 0);
+    if (numwords <= 0 || numwords > MODQLIMBS)
+        return 0;
     spint e[MODQLIMBS] = { 0 };
     spint r0[MODQLIMBS], r1[MODQLIMBS] = { 0 }, tx[MODQLIMBS], ty[MODQLIMBS], w[MODQLIMBS];
     spint carry;

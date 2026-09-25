@@ -119,6 +119,7 @@ secret_key_to_bytes(byte_t *enc, const secret_key_t *sk, const public_key_t *pk)
     enc = sig_ibz_to_bytes(enc, &sk->mat_BAcan_to_BA0_two.m[1][1], CHALLENGE_BYTES, false);
 
     assert(enc - start == SECRETKEY_BYTES);
+    (void)enc;
 }
 
 void
@@ -139,6 +140,7 @@ secret_key_from_bytes(secret_key_t *sk, public_key_t *pk, const byte_t *enc)
     enc = sig_ibz_from_bytes(&sk->mat_BAcan_to_BA0_two.m[1][1], enc, CHALLENGE_BYTES);
 
     assert(enc - start == SECRETKEY_BYTES);
+    (void)enc;
 
     sk->curve = pk->curve;
 }

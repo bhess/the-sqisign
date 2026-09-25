@@ -3335,7 +3335,7 @@ mp_ashr_bits(digit_t *out, const digit_t *x, int nwords, int k)
     int word_shift = k / NUM_BITS_LIMB;
     int bit_shift = k % NUM_BITS_LIMB;
     for (int i = 0; i < nwords; i++) {
-        int src = i + word_shift;
+        int64_t src = (int64_t)i + word_shift;
         digit_t lo = (src < nwords) ? x[src] : sign;
         digit_t hi = (src + 1 < nwords) ? x[src + 1] : sign;
         out[i] = (bit_shift == 0) ? lo : ((lo >> bit_shift) | (hi << (NUM_BITS_LIMB - bit_shift)));

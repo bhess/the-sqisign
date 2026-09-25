@@ -248,6 +248,8 @@ protocols_sign(signature_t *sig, const public_key_t *pk, secret_key_t *sk, const
     prng_domain_clear(&prng_commit_domain);
     // should never fail
     assert(ret);
+    if (!ret)
+        goto err;
 
     // Hash the message to a kernel generator i.e. a scalar such that ker = P + [s]Q
     hash_to_challenge(&sig->chall_coeff, pk, &Ecom_Eaux.E1, m, l);
