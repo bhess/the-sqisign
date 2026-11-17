@@ -51,8 +51,8 @@ implementations:
     signature_keypair: sqisign_p664_17_ref_crypto_sign_keypair
     signature_signature: sqisign_p664_17_ref_oqs_sign_signature
     signature_verify: sqisign_p664_17_ref_oqs_verify
-    sources: ./src/precomp/ref/p664_17/e0_basis.c ./src/precomp/ref/p664_17/ec_params.c ./src/precomp/ref/p664_17/endomorphism_action.c ./src/precomp/ref/p664_17/quaternion_data.c ./src/precomp/ref/p664_17/torsion_constants.c ./src/precomp/ref/p664_17/include/e0_basis.h ./src/precomp/ref/p664_17/include/ec_params.h ./src/precomp/ref/p664_17/include/encoded_sizes.h ./src/precomp/ref/p664_17/include/endomorphism_action.h ./src/precomp/ref/p664_17/include/fp_constants.h ./src/precomp/ref/p664_17/include/quaternion_constants.h ./src/precomp/ref/p664_17/include/quaternion_data.h ./src/precomp/ref/p664_17/include/torsion_constants.h ./src/precomp/ref/p664_17/sqisign_parameters.txt ./src/gf/ref/p664_17/fp_p664_17.c ./src/gf/ref/p664_17/fp_p664_17_32.inc ./src/gf/ref/p664_17/fp_p664_17_64.inc ./src/nistapi/p664_17/api.c ./src/nistapi/p664_17/api.h
-    common_dep: sqisign_common sqisign_common_ref
+    sources: ./src/gf/ref/p664_17/fp_p664_17.c ./src/gf/ref/p664_17/fp_p664_17_32.inc ./src/gf/ref/p664_17/fp_p664_17_64.inc
+    common_dep: sqisign_common sqisign_common_ref sqisign_common_p664_17
   - name: broadwell
     version: round3
     folder_name: .
@@ -69,8 +69,8 @@ implementations:
           - avx2
           - bmi2
           - adx
-    sources: ./src/precomp/ref/p664_17/e0_basis.c ./src/precomp/ref/p664_17/ec_params.c ./src/precomp/ref/p664_17/endomorphism_action.c ./src/precomp/ref/p664_17/quaternion_data.c ./src/precomp/ref/p664_17/torsion_constants.c ./src/precomp/ref/p664_17/include/e0_basis.h ./src/precomp/ref/p664_17/include/ec_params.h ./src/precomp/ref/p664_17/include/encoded_sizes.h ./src/precomp/ref/p664_17/include/endomorphism_action.h ./src/precomp/ref/p664_17/include/fp_constants.h ./src/precomp/ref/p664_17/include/quaternion_constants.h ./src/precomp/ref/p664_17/include/quaternion_data.h ./src/precomp/ref/p664_17/include/torsion_constants.h ./src/precomp/ref/p664_17/sqisign_parameters.txt ./src/gf/sat64/p664_17/fp.c ./src/gf/broadwell/p664_17/fp_asm.S ./src/gf/sat64/p664_17/include/fp.h ./src/gf/sat64/p664_17/include/fp2.h ./src/gf/sat64/p664_17/include/fp_generic_params.h ./src/nistapi/p664_17/api.c ./src/nistapi/p664_17/api.h
-    common_dep: sqisign_common sqisign_common_sat64
+    sources: ./src/gf/broadwell/p664_17/fp_asm.S
+    common_dep: sqisign_common sqisign_common_sat64 sqisign_common_p664_17 sqisign_common_sat64_p664_17
   - name: arm64
     version: round3
     folder_name: .
@@ -84,5 +84,5 @@ implementations:
           - Linux
           - Darwin
         required_flags: [] # Scalar AArch64; no optional ISA extensions.
-    sources: ./src/precomp/ref/p664_17/e0_basis.c ./src/precomp/ref/p664_17/ec_params.c ./src/precomp/ref/p664_17/endomorphism_action.c ./src/precomp/ref/p664_17/quaternion_data.c ./src/precomp/ref/p664_17/torsion_constants.c ./src/precomp/ref/p664_17/include/e0_basis.h ./src/precomp/ref/p664_17/include/ec_params.h ./src/precomp/ref/p664_17/include/encoded_sizes.h ./src/precomp/ref/p664_17/include/endomorphism_action.h ./src/precomp/ref/p664_17/include/fp_constants.h ./src/precomp/ref/p664_17/include/quaternion_constants.h ./src/precomp/ref/p664_17/include/quaternion_data.h ./src/precomp/ref/p664_17/include/torsion_constants.h ./src/precomp/ref/p664_17/sqisign_parameters.txt ./src/gf/sat64/p664_17/fp.c ./src/gf/arm64/p664_17/fp_asm.S ./src/gf/sat64/p664_17/include/fp.h ./src/gf/sat64/p664_17/include/fp2.h ./src/gf/sat64/p664_17/include/fp_generic_params.h ./src/nistapi/p664_17/api.c ./src/nistapi/p664_17/api.h
-    common_dep: sqisign_common sqisign_common_sat64
+    sources: ./src/gf/arm64/p664_17/fp_asm.S
+    common_dep: sqisign_common sqisign_common_sat64 sqisign_common_p664_17 sqisign_common_sat64_p664_17
